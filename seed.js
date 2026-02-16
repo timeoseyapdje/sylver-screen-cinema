@@ -1,4 +1,5 @@
 // seed.js - Remplir la base PostgreSQL avec des données de démonstration
+require('dotenv').config();
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
@@ -7,12 +8,104 @@ const pool = new Pool({
     ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+// Initialize database tables first
+async function initDatabase() {
+    console.log('🔧 Initialisation des tables de la base de données...\n');
+
+    try {
+        await pool.query(`CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            phone TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            is_admin BOOLEAN DEFAULT false,
+            email_notifications BOOLEAN DEFAULT true,
+            phone_verified BOOLEAN DEFAULT false,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS movies (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            genre TEXT NOT NULL,
+            duration INTEGER NOT NULL,
+            description TEXT,
+            poster_url TEXT,
+            rating REAL DEFAULT 0,
+            votes_count INTEGER DEFAULT 0,
+            release_date DATE,
+            end_date DATE,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS showtimes (
+            id SERIAL PRIMARY KEY,
+            movie_id INTEGER NOT NULL REFERENCES movies(id),
+            date DATE NOT NULL,
+            time TIME NOT NULL,
+            room TEXT NOT NULL,
+            price REAL DEFAULT 3000,
+            total_seats INTEGER DEFAULT 100,
+            available_seats INTEGER DEFAULT 100
+        )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            showtime_id INTEGER NOT NULL REFERENCES showtimes(id),
+            seats TEXT NOT NULL,
+            total_price REAL NOT NULL,
+            status TEXT DEFAULT 'confirmed',
+            booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS ratings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            movie_id INTEGER NOT NULL REFERENCES movies(id),
+            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, movie_id)
+        )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS verification_codes (
+            id SERIAL PRIMARY KEY,
+            phone TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS newsletter (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+        // Create admin user
+        const adminPassword = await bcrypt.hash('admin123', 10);
+        await pool.query(`
+            INSERT INTO users (name, email, phone, password, is_admin, phone_verified)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (email) DO NOTHING
+        `, ['Admin', 'admin@sylver-screen.com', '+237000000000', adminPassword, true, true]);
+
+        console.log('✅ Tables créées avec succès\n');
+    } catch (error) {
+        console.error('❌ Erreur lors de la création des tables:', error);
+        throw error;
+    }
+}
+
+// Films de démonstration
 const movies = [
     {
         title: 'Indomptable',
         genre: 'Drame Camerounais',
         duration: 120,
-        description: 'Un film puissant sur la résilience et la détermination camerounaise. L\'histoire inspirante d\'un champion qui refuse d\'abandonner.',
+        description: 'Un film puissant sur la résilience et la détermination camerounaise.',
         poster_url: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400',
         release_date: '2025-02-01',
         end_date: '2025-04-30'
@@ -21,7 +114,7 @@ const movies = [
         title: 'Wicked',
         genre: 'Musical/Fantasy',
         duration: 160,
-        description: 'L\'histoire inédite des sorcières d\'Oz avant l\'arrivée de Dorothy. Une aventure musicale époustouflante.',
+        description: 'L\'histoire inédite des sorcières d\'Oz avant l\'arrivée de Dorothy.',
         poster_url: 'https://images.unsplash.com/photo-1594908900066-3f47337549d8?w=400',
         release_date: '2025-02-10',
         end_date: '2025-05-15'
@@ -68,6 +161,9 @@ async function seed() {
     console.log('🌱 Début du remplissage de la base de données PostgreSQL...\n');
 
     try {
+        // First, initialize database tables
+        await initDatabase();
+
         // 1. Insérer les films
         console.log('🎬 Ajout des films...');
         for (const movie of movies) {
@@ -149,6 +245,7 @@ async function seed() {
 
     } catch (error) {
         console.error('❌ Erreur:', error);
+        process.exit(1);
     } finally {
         await pool.end();
         process.exit(0);
