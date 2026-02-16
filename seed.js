@@ -170,17 +170,28 @@ async function seed() {
             const rating = (3.5 + Math.random() * 1.5).toFixed(1);
             const votes = Math.floor(50 + Math.random() * 300);
 
-            await pool.query(
-                `INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date, rating, votes_count)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-                [movie.title, movie.genre, movie.duration, movie.description, movie.poster_url,
-                movie.release_date, movie.end_date, rating, votes]
-            );
-            console.log(`   ✓ ${movie.title} (${movie.genre})`);
+            // Check if movie already exists
+            const existing = await pool.query('SELECT id FROM movies WHERE title = $1', [movie.title]);
+
+            if (existing.rows.length === 0) {
+                await pool.query(
+                    `INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date, rating, votes_count)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                    [movie.title, movie.genre, movie.duration, movie.description, movie.poster_url,
+                    movie.release_date, movie.end_date, rating, votes]
+                );
+                console.log(`   ✓ ${movie.title} (${movie.genre})`);
+            } else {
+                console.log(`   ⊙ ${movie.title} (déjà présent)`);
+            }
         }
 
         // 2. Insérer les séances
         console.log('\n📅 Ajout des séances...');
+
+        // Delete old showtimes (optional - only keep if you want fresh showtimes each deploy)
+        await pool.query('DELETE FROM showtimes WHERE date < CURRENT_DATE');
+
         const showtimes = [
             { time: '11:00', room: 'Salle 1' },
             { time: '14:00', room: 'Salle 1' },
@@ -190,7 +201,12 @@ async function seed() {
         ];
 
         let showtimeCount = 0;
-        for (let movieId = 1; movieId <= movies.length; movieId++) {
+
+        // Get all movie IDs
+        const movieResult = await pool.query('SELECT id FROM movies');
+        const movieIds = movieResult.rows.map(row => row.id);
+
+        for (const movieId of movieIds) {
             const numShowtimes = 3 + Math.floor(Math.random() * 3);
 
             for (let i = 0; i < numShowtimes; i++) {
@@ -203,12 +219,20 @@ async function seed() {
                 const seats = 150;
                 const available = seats - Math.floor(Math.random() * 30);
 
-                await pool.query(
-                    `INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats)
-                     VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-                    [movieId, dateStr, showtime.time, showtime.room, 3000, seats, available]
+                // Check if this showtime already exists
+                const existing = await pool.query(
+                    'SELECT id FROM showtimes WHERE movie_id = $1 AND date = $2 AND time = $3',
+                    [movieId, dateStr, showtime.time]
                 );
-                showtimeCount++;
+
+                if (existing.rows.length === 0) {
+                    await pool.query(
+                        `INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats)
+                         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+                        [movieId, dateStr, showtime.time, showtime.room, 3000, seats, available]
+                    );
+                    showtimeCount++;
+                }
             }
         }
         console.log(`   ✓ ${showtimeCount} séances ajoutées`);
@@ -225,7 +249,8 @@ async function seed() {
         for (const user of testUsers) {
             await pool.query(
                 `INSERT INTO users (name, email, phone, password, phone_verified, email_notifications)
-                 VALUES ($1, $2, $3, $4, true, true)`,
+                 VALUES ($1, $2, $3, $4, true, true)
+                 ON CONFLICT (email) DO NOTHING`,
                 [user.name, user.email, user.phone, testPassword]
             );
             console.log(`   ✓ ${user.name} (${user.email})`);
