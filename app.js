@@ -131,85 +131,33 @@ async function registerStep1(event) {
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
     const phone = document.getElementById('registerPhone').value;
+    const password = document.getElementById('registerPassword').value;
+    const emailNotifications = document.getElementById('newsletterOptIn').checked;
 
     try {
-        const response = await fetch(`${API_URL}/auth/send-verification`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone })
+            body: JSON.stringify({ name, email, phone, password, emailNotifications })
         });
+
+        const data = await response.json();
 
         if (response.ok) {
-            // Store registration data temporarily
-            sessionStorage.setItem('registrationData', JSON.stringify({
-                name, email, phone,
-                password: document.getElementById('registerPassword').value,
-                emailNotifications: document.getElementById('newsletterOptIn').checked
-            }));
-
-            document.getElementById('methodUsed').textContent = 'SMS';
-            document.getElementById('registerStep1').classList.add('hidden');
-            document.getElementById('registerStep2').classList.remove('hidden');
-        } else {
-            alert('Échec d\'envoi du code');
-        }
-    } catch (error) {
-        console.error('Send verification error:', error);
-        alert('Erreur d\'envoi du code');
-    }
-}
-
-async function verifyPhone(event) {
-    event.preventDefault();
-
-    const code = ['code1', 'code2', 'code3', 'code4', 'code5', 'code6']
-        .map(id => document.getElementById(id).value)
-        .join('');
-
-    const registrationData = JSON.parse(sessionStorage.getItem('registrationData'));
-
-    try {
-        // Verify phone
-        const verifyResponse = await fetch(`${API_URL}/auth/verify-phone`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone: registrationData.phone, code })
-        });
-
-        if (!verifyResponse.ok) {
-            alert('Code incorrect');
-            return;
-        }
-
-        // Register user
-        const registerResponse = await fetch(`${API_URL}/auth/register`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(registrationData)
-        });
-
-        const data = await registerResponse.json();
-
-        if (registerResponse.ok) {
             authToken = data.token;
             currentUser = data.user;
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
-            sessionStorage.removeItem('registrationData');
             closeModal('registerModal');
             updateNavigation();
-            alert('Compte créé avec succès !');
-
-            // Reset form
-            document.getElementById('registerStep1').classList.remove('hidden');
-            document.getElementById('registerStep2').classList.add('hidden');
+            alert('Compte créé avec succès ! Bienvenue chez Sylver Screen !');
         } else {
             alert(data.error || 'Inscription échouée');
         }
     } catch (error) {
-        console.error('Verification error:', error);
-        alert('Erreur de vérification');
+        console.error('Registration error:', error);
+        alert('Erreur d\'inscription');
     }
 }
 

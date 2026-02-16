@@ -16,6 +16,8 @@
     <header>
         <nav>
             <div class="logo-container">
+                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83"
+                    alt="Sylver Screen" class="logo-img">
                 <div class="logo-text">SYLVER SCREEN</div>
             </div>
             <div class="nav-links" id="navLinks">
@@ -106,7 +108,10 @@
             <div class="footer-section">
                 <h3>Sylver Screen Cinema</h3>
                 <p>Douala Grand Mall<br>Route de l'Aéroport<br>Douala, Cameroun</p>
-                <p style="margin-top: 1.5rem;">Tél: +237 XXX XXX XXX<br>Email: contact@sylver-screen.com</p>
+                <p style="margin-top: 1.5rem;">Tél: +237 XXX XXX XXX<br>Email: <a href="/cdn-cgi/l/email-protection"
+                        class="__cf_email__"
+                        data-cfemail="fd9e9293899c9e89bd8e84918b988fd08e9e8f989893d39e9290">[email&#160;protected]</a>
+                </p>
             </div>
             <div class="footer-section">
                 <h3>Navigation</h3>
@@ -168,55 +173,31 @@
                 <button class="close-modal" onclick="closeModal('registerModal')">&times;</button>
             </div>
             <div class="modal-body">
-                <div id="registerStep1">
-                    <form onsubmit="registerStep1(event)">
-                        <div class="form-group">
-                            <label>Nom complet</label>
-                            <input type="text" id="registerName" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Email</label>
-                            <input type="email" id="registerEmail" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Téléphone</label>
-                            <input type="tel" id="registerPhone" placeholder="+237 XXX XXX XXX" required>
-                            <small
-                                style="color: var(--text-gray); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Un
-                                code de vérification sera envoyé par SMS</small>
-                        </div>
-                        <div class="form-group">
-                            <label>Mot de passe</label>
-                            <input type="password" id="registerPassword" required minlength="6">
-                        </div>
-                        <div class="form-group">
-                            <label>
-                                <input type="checkbox" id="newsletterOptIn" checked>
-                                Recevoir les notifications par email
-                            </label>
-                        </div>
-                        <button type="submit" class="btn-white" style="width: 100%;">Continuer</button>
-                    </form>
-                </div>
-                <div id="registerStep2" class="hidden">
-                    <div class="alert">
-                        Code envoyé via <span id="methodUsed">SMS</span>
+                <form onsubmit="registerStep1(event)">
+                    <div class="form-group">
+                        <label>Nom complet</label>
+                        <input type="text" id="registerName" required>
                     </div>
-                    <form onsubmit="verifyPhone(event)">
-                        <div class="form-group">
-                            <label>Code de vérification</label>
-                            <div class="verification-code">
-                                <input type="text" maxlength="1" id="code1" oninput="moveToNext(this, 'code2')">
-                                <input type="text" maxlength="1" id="code2" oninput="moveToNext(this, 'code3')">
-                                <input type="text" maxlength="1" id="code3" oninput="moveToNext(this, 'code4')">
-                                <input type="text" maxlength="1" id="code4" oninput="moveToNext(this, 'code5')">
-                                <input type="text" maxlength="1" id="code5" oninput="moveToNext(this, 'code6')">
-                                <input type="text" maxlength="1" id="code6">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn-white" style="width: 100%;">Vérifier</button>
-                    </form>
-                </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="registerEmail" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="tel" id="registerPhone" placeholder="+237 XXX XXX XXX" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mot de passe</label>
+                        <input type="password" id="registerPassword" required minlength="6">
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="newsletterOptIn" checked>
+                            Recevoir les notifications par email
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-white" style="width: 100%;">Créer mon compte</button>
+                </form>
             </div>
         </div>
     </div>
@@ -278,13 +259,4 @@
                 <div class="alert">
                     Annulation gratuite jusqu'à 25 minutes avant
                 </div>
-                <button class="btn-white" style="width: 100%; margin-top: 2rem;"
-                    onclick="confirmBooking()">Confirmer</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
-
-</html>
+                <button class="btn-white" style="width: 100%; margin-top: 2rem;" onclick="confir

@@ -1,4 +1,4 @@
-// server.js - Backend avec PostgreSQL (Supabase) et Africa's Talking
+// server.js - Backend avec PostgreSQL (Supabase)
 require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
@@ -7,7 +7,6 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const AfricasTalking = require('africastalking');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -129,19 +128,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Africa's Talking configuration
-let smsClient = null;
-if (process.env.AFRICASTALKING_USERNAME && process.env.AFRICASTALKING_API_KEY) {
-    const africastalking = AfricasTalking({
-        apiKey: process.env.AFRICASTALKING_API_KEY,
-        username: process.env.AFRICASTALKING_USERNAME
-    });
-    smsClient = africastalking.SMS;
-    console.log('✅ Africa\'s Talking SMS configured');
-} else {
-    console.log('⚠️  Africa\'s Talking not configured - SMS will run in simulation mode');
-}
-
 // Helper functions
 async function sendEmail(to, subject, html) {
     try {
@@ -156,31 +142,6 @@ async function sendEmail(to, subject, html) {
     } catch (error) {
         console.error('❌ Email error:', error);
         return false;
-    }
-}
-
-async function sendSMS(to, message) {
-    if (!smsClient) {
-        console.log('📱 SMS simulation (Africa\'s Talking not configured):');
-        console.log(`   To: ${to}`);
-        console.log(`   Message: ${message}`);
-        return true;
-    }
-
-    try {
-        const result = await smsClient.send({
-            to: [to],
-            message: message,
-            from: process.env.AFRICASTALKING_SHORTCODE || null
-        });
-        console.log('✅ SMS sent via Africa\'s Talking:', result);
-        return true;
-    } catch (error) {
-        console.error('❌ SMS error:', error);
-        console.log('📱 Fallback to simulation:');
-        console.log(`   To: ${to}`);
-        console.log(`   Message: ${message}`);
-        return true;
     }
 }
 
@@ -208,8 +169,8 @@ app.post('/api/auth/register', async (req, res) => {
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
-            'INSERT INTO users (name, email, phone, password, email_notifications) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [name, email, phone, hashedPassword, emailNotifications]
+            'INSERT INTO users (name, email, phone, password, email_notifications, phone_verified) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id',
+            [name, email, phone, hashedPassword, emailNotifications, true]
         );
         const userId = result.rows[0].id;
         const token = jwt.sign({ id: userId, email, is_admin: false }, JWT_SECRET);
@@ -571,7 +532,6 @@ app.listen(PORT, () => {
 ║     👨‍💼 Admin: http://localhost:${PORT}/admin.html     ║
 ║                                                       ║
 ║     🗄️  Database: PostgreSQL (Supabase)              ║
-║     📱 SMS: Africa's Talking                          ║
 ║                                                       ║
 ║     🔐 Admin: admin@sylver-screen.com / admin123     ║
 ║                                                       ║
