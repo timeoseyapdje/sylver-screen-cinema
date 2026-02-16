@@ -1,172 +1,22 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Sylver Screen Cinema</title>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="index.html">
-    <style>
-        .admin-panel {
-            max-width: 1400px;
-            margin: 150px auto 4rem;
-            padding: 0 2rem;
-        }
-
-        .admin-header {
-            margin-bottom: 4rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .admin-header h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 4rem;
-            letter-spacing: 2px;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
-        }
-
-        .stat-card {
-            background: var(--gray);
-            border: 1px solid var(--border-gray);
-            padding: 2rem;
-            text-align: center;
-        }
-
-        .stat-number {
-            font-family: 'Playfair Display', serif;
-            font-size: 3rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: var(--text-gray);
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 0.9rem;
-        }
-
-        .admin-section {
-            background: var(--gray);
-            border: 1px solid var(--border-gray);
-            padding: 3rem;
-            margin-bottom: 3rem;
-        }
-
-        .admin-section h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 2.5rem;
-            margin-bottom: 2rem;
-            letter-spacing: 2px;
-        }
-
-        .section-actions {
-            margin-bottom: 2rem;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-gray);
-        }
-
-        th {
-            font-weight: 600;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-size: 0.85rem;
-        }
-
-        .btn-edit, .btn-delete {
-            padding: 0.5rem 1rem;
-            border: none;
-            cursor: pointer;
-            margin-right: 0.5rem;
-            font-size: 0.85rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: all 0.3s;
-        }
-
-        .btn-edit {
-            background: var(--white);
-            color: var(--black);
-        }
-
-        .btn-edit:hover {
-            background: var(--text-gray);
-        }
-
-        .btn-delete {
-            background: transparent;
-            color: var(--white);
-            border: 1px solid var(--white);
-        }
-
-        .btn-delete:hover {
-            background: var(--white);
-            color: var(--black);
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .tabs {
-            display: flex;
-            gap: 0;
-            margin-bottom: 2rem;
-            border-bottom: 1px solid var(--border-gray);
-        }
-
-        .tab {
-            padding: 1rem 2rem;
-            background: transparent;
-            border: none;
-            color: var(--text-gray);
-            cursor: pointer;
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-        }
-
-        .tab.active {
-            color: var(--white);
-            border-bottom-color: var(--white);
-        }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-    </style>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <header>
         <nav>
             <div class="logo-container">
-                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83" alt="Sylver Screen" class="logo-img">
+                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83"
+                    alt="Sylver Screen" class="logo-img">
                 <div class="logo-text">SYLVER SCREEN</div>
             </div>
             <div class="nav-links">
@@ -439,4 +289,5 @@
     </script>
     <script src="admin.js"></script>
 </body>
+
 </html>
