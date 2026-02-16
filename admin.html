@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Sylver Screen Cinema</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="index.html">
+    <style>
+        .admin-panel {
+            max-width: 1400px;
+            margin: 150px auto 4rem;
+            padding: 0 2rem;
+        }
+
+        .admin-header {
+            margin-bottom: 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 4rem;
+            letter-spacing: 2px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stat-card {
+            background: var(--gray);
+            border: 1px solid var(--border-gray);
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-family: 'Playfair Display', serif;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-gray);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .admin-section {
+            background: var(--gray);
+            border: 1px solid var(--border-gray);
+            padding: 3rem;
+            margin-bottom: 3rem;
+        }
+
+        .admin-section h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            letter-spacing: 2px;
+        }
+
+        .section-actions {
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border-gray);
+        }
+
+        th {
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .btn-edit, .btn-delete {
+            padding: 0.5rem 1rem;
+            border: none;
+            cursor: pointer;
+            margin-right: 0.5rem;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+        }
+
+        .btn-edit {
+            background: var(--white);
+            color: var(--black);
+        }
+
+        .btn-edit:hover {
+            background: var(--text-gray);
+        }
+
+        .btn-delete {
+            background: transparent;
+            color: var(--white);
+            border: 1px solid var(--white);
+        }
+
+        .btn-delete:hover {
+            background: var(--white);
+            color: var(--black);
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--border-gray);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: transparent;
+            border: none;
+            color: var(--text-gray);
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--white);
+            border-bottom-color: var(--white);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo-container">
+                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83" alt="Sylver Screen" class="logo-img">
+                <div class="logo-text">SYLVER SCREEN</div>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Site Public</a>
+                <button class="btn-white" onclick="logout()">Déconnexion</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="admin-panel">
+        <div class="admin-header">
+            <h1>PANNEAU ADMIN</h1>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="statUsers">0</div>
+                <div class="stat-label">Utilisateurs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statBookings">0</div>
+                <div class="stat-label">Réservations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statRevenue">0</div>
+                <div class="stat-label">Revenus (FCFA)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statMovies">0</div>
+                <div class="stat-label">Films actifs</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('movies')">Films</button>
+            <button class="tab" onclick="switchTab('showtimes')">Séances</button>
+            <button class="tab" onclick="switchTab('bookings')">Réservations</button>
+            <button class="tab" onclick="switchTab('users')">Utilisateurs</button>
+        </div>
+
+        <!-- Movies Tab -->
+        <div id="moviesTab" class="tab-content active">
+            <div class="admin-section">
+                <h2>GESTION DES FILMS</h2>
+                <div class="section-actions">
+                    <button class="btn-white" onclick="openAddMovieModal()">+ Ajouter un film</button>
+                </div>
+                <table id="moviesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Titre</th>
+                            <th>Genre</th>
+                            <th>Durée</th>
+                            <th>Note</th>
+                            <th>Date sortie</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Showtimes Tab -->
+        <div id="showtimesTab" class="tab-content">
+            <div class="admin-section">
+                <h2>GESTION DES SÉANCES</h2>
+                <div class="section-actions">
+                    <button class="btn-white" onclick="openAddShowtimeModal()">+ Ajouter une séance</button>
+                </div>
+                <table id="showtimesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Film</th>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Salle</th>
+                            <th>Prix</th>
+                            <th>Places dispo</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bookings Tab -->
+        <div id="bookingsTab" class="tab-content">
+            <div class="admin-section">
+                <h2>RÉSERVATIONS</h2>
+                <table id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Utilisateur</th>
+                            <th>Film</th>
+                            <th>Date/Heure</th>
+                            <th>Places</th>
+                            <th>Total</th>
+                            <th>Statut</th>
+                            <th>Date réservation</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="usersTab" class="tab-content">
+            <div class="admin-section">
+                <h2>UTILISATEURS</h2>
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Téléphone</th>
+                            <th>Admin</th>
+                            <th>Notifications</th>
+                            <th>Vérifié</th>
+                            <th>Inscription</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Movie Modal -->
+    <div class="modal" id="movieFormModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="movieFormTitle">AJOUTER UN FILM</h2>
+                <button class="close-modal" onclick="closeModal('movieFormModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveMovie(event)">
+                    <input type="hidden" id="movieId">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Titre</label>
+                            <input type="text" id="movieTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Genre</label>
+                            <input type="text" id="movieGenre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Durée (minutes)</label>
+                            <input type="number" id="movieDuration" required>
+                        </div>
+                        <div class="form-group">
+                            <label>URL Affiche</label>
+                            <input type="url" id="moviePoster">
+                        </div>
+                        <div class="form-group">
+                            <label>Date de sortie</label>
+                            <input type="date" id="movieReleaseDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Date de fin</label>
+                            <input type="date" id="movieEndDate">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="movieDescription" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="movieActive" checked>
+                            Film actif
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-white" style="width: 100%;">Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Showtime Modal -->
+    <div class="modal" id="showtimeFormModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="showtimeFormTitle">AJOUTER UNE SÉANCE</h2>
+                <button class="close-modal" onclick="closeModal('showtimeFormModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveShowtime(event)">
+                    <input type="hidden" id="showtimeId">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Film</label>
+                            <select id="showtimeMovie" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="showtimeDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Heure</label>
+                            <input type="time" id="showtimeTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Salle</label>
+                            <select id="showtimeRoom" required>
+                                <option value="Salle 1">Salle 1</option>
+                                <option value="Salle 2">Salle 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Prix (FCFA)</label>
+                            <input type="number" id="showtimePrice" value="3000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Places totales</label>
+                            <input type="number" id="showtimeSeats" value="150" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-white" style="width: 100%;">Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Include same style variables from index.html
+        const style = document.createElement('style');
+        style.textContent = `
+            :root {
+                --black: #000000;
+                --white: #FFFFFF;
+                --gray: #1A1A1A;
+                --light-gray: #2A2A2A;
+                --border-gray: #333333;
+                --text-gray: #CCCCCC;
+            }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Montserrat', sans-serif; background: var(--black); color: var(--white); }
+            header { position: fixed; top: 0; width: 100%; z-index: 1000; background: rgba(0, 0, 0, 0.98); border-bottom: 1px solid var(--border-gray); }
+            nav { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+            .logo-container { display: flex; align-items: center; gap: 1.5rem; }
+            .logo-img { height: 60px; width: auto; }
+            .logo-text { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; letter-spacing: 3px; }
+            .nav-links { display: flex; gap: 2rem; align-items: center; }
+            .nav-links a { color: var(--white); text-decoration: none; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; }
+            .btn-white { background: var(--white); color: var(--black); padding: 0.75rem 2rem; border: none; font-weight: 600; cursor: pointer; font-family: 'Montserrat', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+            .btn-black { background: var(--black); color: var(--white); padding: 0.75rem 2rem; border: 2px solid var(--white); font-weight: 600; cursor: pointer; font-family: 'Montserrat', sans-serif; letter-spacing: 1px; text-transform: uppercase; }
+            .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 2000; align-items: center; justify-content: center; }
+            .modal.active { display: flex; }
+            .modal-content { background: var(--gray); border: 1px solid var(--border-gray); max-width: 800px; width: 90%; max-height: 90vh; overflow-y: auto; }
+            .modal-header { padding: 3rem 3rem 2rem; border-bottom: 1px solid var(--border-gray); display: flex; justify-content: space-between; align-items: center; }
+            .modal-header h2 { font-family: 'Playfair Display', serif; font-size: 2rem; letter-spacing: 2px; }
+            .close-modal { background: none; border: none; color: var(--white); font-size: 2.5rem; cursor: pointer; line-height: 1; }
+            .modal-body { padding: 3rem; }
+            .form-group { margin-bottom: 1.5rem; }
+            .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; font-size: 0.85rem; }
+            .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 1rem; background: var(--black); border: 1px solid var(--border-gray); color: var(--white); font-family: 'Montserrat', sans-serif; }
+        `;
+        document.head.appendChild(style);
+    </script>
+    <script src="admin.js"></script>
+</body>
+</html>
