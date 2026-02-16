@@ -17,7 +17,7 @@
   "license": "MIT",
   "dependencies": {
     "express": "^4.21.2",
-    "sqlite3": "^5.1.7",
+    "pg": "^8.11.3",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
     "nodemailer": "^6.9.16",

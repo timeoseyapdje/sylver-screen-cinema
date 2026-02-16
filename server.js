@@ -1,608 +1,483 @@
-// server.js - Backend Node.js server with SQLite database
+// server.js - Backend avec PostgreSQL (Supabase)
 const express = require('express');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const path = require('path');
 
 const app = express();
-const PORT = 3000;
-const JWT_SECRET = 'sylver-screen-secret-key-2025';
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'sylver-screen-secret-key-2025';
+
+// PostgreSQL connection
+const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
-// Database initialization
-const db = new sqlite3.Database('./sylver_screen.db', (err) => {
+// Test database connection
+pool.query('SELECT NOW()', (err, res) => {
     if (err) {
-        console.error('Error opening database:', err);
+        console.error('❌ Database connection error:', err);
     } else {
-        console.log('Connected to SQLite database');
+        console.log('✅ Connected to PostgreSQL database');
         initDatabase();
     }
 });
 
 // Initialize database tables
-function initDatabase() {
-    db.serialize(() => {
-        // Users table
-        db.run(`CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            phone TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            is_admin BOOLEAN DEFAULT 0,
-            email_notifications BOOLEAN DEFAULT 1,
-            phone_verified BOOLEAN DEFAULT 0,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+async function initDatabase() {
+    try {
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                phone TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                is_admin BOOLEAN DEFAULT false,
+                email_notifications BOOLEAN DEFAULT true,
+                phone_verified BOOLEAN DEFAULT false,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
-        // Movies table
-        db.run(`CREATE TABLE IF NOT EXISTS movies (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT NOT NULL,
-            genre TEXT NOT NULL,
-            duration INTEGER NOT NULL,
-            description TEXT,
-            poster_url TEXT,
-            rating REAL DEFAULT 0,
-            votes_count INTEGER DEFAULT 0,
-            release_date DATE,
-            end_date DATE,
-            is_active BOOLEAN DEFAULT 1,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS movies (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                genre TEXT NOT NULL,
+                duration INTEGER NOT NULL,
+                description TEXT,
+                poster_url TEXT,
+                rating REAL DEFAULT 0,
+                votes_count INTEGER DEFAULT 0,
+                release_date DATE,
+                end_date DATE,
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
-        // Showtimes table
-        db.run(`CREATE TABLE IF NOT EXISTS showtimes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            movie_id INTEGER NOT NULL,
-            date DATE NOT NULL,
-            time TIME NOT NULL,
-            room TEXT NOT NULL,
-            price REAL DEFAULT 3000,
-            total_seats INTEGER DEFAULT 100,
-            available_seats INTEGER DEFAULT 100,
-            FOREIGN KEY (movie_id) REFERENCES movies(id)
-        )`);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS showtimes (
+                id SERIAL PRIMARY KEY,
+                movie_id INTEGER NOT NULL REFERENCES movies(id),
+                date DATE NOT NULL,
+                time TIME NOT NULL,
+                room TEXT NOT NULL,
+                price REAL DEFAULT 3000,
+                total_seats INTEGER DEFAULT 100,
+                available_seats INTEGER DEFAULT 100
+            )
+        `);
 
-        // Bookings table
-        db.run(`CREATE TABLE IF NOT EXISTS bookings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            showtime_id INTEGER NOT NULL,
-            seats TEXT NOT NULL,
-            total_price REAL NOT NULL,
-            status TEXT DEFAULT 'confirmed',
-            booking_time DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (showtime_id) REFERENCES showtimes(id)
-        )`);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS bookings (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                showtime_id INTEGER NOT NULL REFERENCES showtimes(id),
+                seats TEXT NOT NULL,
+                total_price REAL NOT NULL,
+                status TEXT DEFAULT 'confirmed',
+                booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
-        // Ratings table
-        db.run(`CREATE TABLE IF NOT EXISTS ratings (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            movie_id INTEGER NOT NULL,
-            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(user_id, movie_id),
-            FOREIGN KEY (user_id) REFERENCES users(id),
-            FOREIGN KEY (movie_id) REFERENCES movies(id)
-        )`);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS ratings (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                movie_id INTEGER NOT NULL REFERENCES movies(id),
+                rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, movie_id)
+            )
+        `);
 
-        // Verification codes table
-        db.run(`CREATE TABLE IF NOT EXISTS verification_codes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            phone TEXT NOT NULL,
-            code TEXT NOT NULL,
-            method TEXT NOT NULL,
-            expires_at DATETIME NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS verification_codes (
+                id SERIAL PRIMARY KEY,
+                phone TEXT NOT NULL,
+                code TEXT NOT NULL,
+                method TEXT NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
-        // Newsletter subscribers
-        db.run(`CREATE TABLE IF NOT EXISTS newsletter (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            subscribed_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )`);
+        await pool.query(`
+            CREATE TABLE IF NOT EXISTS newsletter (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
 
-        // Create admin user if not exists
-        const adminPassword = bcrypt.hashSync('admin123', 10);
-        db.run(`INSERT OR IGNORE INTO users (name, email, phone, password, is_admin, phone_verified) 
-                VALUES ('Admin', 'admin@sylver-screen.com', '+237000000000', ?, 1, 1)`, [adminPassword], (err) => {
-            if (err) {
-                console.error('Error creating admin user:', err);
-            } else {
-                console.log('Database initialized successfully');
-            }
-        });
-    });
+        // Create admin user
+        const adminPassword = await bcrypt.hash('admin123', 10);
+        await pool.query(`
+            INSERT INTO users (name, email, phone, password, is_admin, phone_verified)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            ON CONFLICT (email) DO NOTHING
+        `, ['Admin', 'admin@sylver-screen.com', '+237000000000', adminPassword, true, true]);
+
+        console.log('✅ Database initialized successfully');
+    } catch (error) {
+        console.error('❌ Database initialization error:', error);
+    }
 }
 
-// Email configuration (configure with your actual email settings)
+// Email configuration
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'noreply@sylver-screen.com',
-        pass: 'your-app-password'
+        user: process.env.EMAIL_USER || 'noreply@sylver-screen.com',
+        pass: process.env.EMAIL_PASS || 'your-app-password'
     }
 });
 
-// Authentication middleware
+// Auth middleware
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
-    if (!token) {
-        return res.status(401).json({ error: 'Access denied' });
-    }
+    if (!token) return res.status(401).json({ error: 'Access denied' });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
-        if (err) {
-            return res.status(403).json({ error: 'Invalid token' });
-        }
+        if (err) return res.status(403).json({ error: 'Invalid token' });
         req.user = user;
         next();
     });
 }
 
-// Admin middleware
 function isAdmin(req, res, next) {
-    if (!req.user.is_admin) {
-        return res.status(403).json({ error: 'Admin access required' });
-    }
+    if (!req.user.is_admin) return res.status(403).json({ error: 'Admin access required' });
     next();
 }
 
 // ========== AUTH ROUTES ==========
 
-// Register
 app.post('/api/auth/register', async (req, res) => {
     const { name, email, phone, password, emailNotifications } = req.body;
-
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-
-        db.run(
-            `INSERT INTO users (name, email, phone, password, email_notifications) VALUES (?, ?, ?, ?, ?)`,
-            [name, email, phone, hashedPassword, emailNotifications ? 1 : 0],
-            function (err) {
-                if (err) {
-                    return res.status(400).json({ error: 'User already exists' });
-                }
-
-                const token = jwt.sign({ id: this.lastID, email, is_admin: false }, JWT_SECRET);
-                res.json({
-                    token,
-                    user: { id: this.lastID, name, email, phone, is_admin: false }
-                });
-            }
+        const result = await pool.query(
+            'INSERT INTO users (name, email, phone, password, email_notifications) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [name, email, phone, hashedPassword, emailNotifications]
         );
+        const token = jwt.sign({ id: result.rows[0].id, email, is_admin: false }, JWT_SECRET);
+        res.json({ token, user: { id: result.rows[0].id, name, email, phone, is_admin: false } });
     } catch (error) {
-        res.status(500).json({ error: 'Registration failed' });
+        res.status(400).json({ error: 'User already exists' });
     }
 });
 
-// Login
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
+    try {
+        const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid credentials' });
 
-    db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
-        if (err || !user) {
-            return res.status(400).json({ error: 'Invalid credentials' });
-        }
-
+        const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) {
-            return res.status(400).json({ error: 'Invalid credentials' });
-        }
+        if (!validPassword) return res.status(400).json({ error: 'Invalid credentials' });
 
         const token = jwt.sign({ id: user.id, email: user.email, is_admin: user.is_admin }, JWT_SECRET);
-        res.json({
-            token,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                is_admin: user.is_admin
-            }
-        });
-    });
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, is_admin: user.is_admin } });
+    } catch (error) {
+        res.status(500).json({ error: 'Login failed' });
+    }
 });
 
-// Send verification code
-app.post('/api/auth/send-verification', (req, res) => {
+app.post('/api/auth/send-verification', async (req, res) => {
     const { phone, method } = req.body;
     const code = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    db.run(
-        `INSERT INTO verification_codes (phone, code, method, expires_at) VALUES (?, ?, ?, ?)`,
-        [phone, code, method, expiresAt],
-        (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to send code' });
-            }
-
-            // In production, send SMS or WhatsApp message here
-            console.log(`Verification code for ${phone} via ${method}: ${code}`);
-
-            res.json({ success: true, message: 'Code sent successfully' });
-        }
-    );
+    try {
+        await pool.query(
+            'INSERT INTO verification_codes (phone, code, method, expires_at) VALUES ($1, $2, $3, $4)',
+            [phone, code, method, expiresAt]
+        );
+        console.log(`Verification code for ${phone} via ${method}: ${code}`);
+        res.json({ success: true, message: 'Code sent successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to send code' });
+    }
 });
 
-// Verify phone
-app.post('/api/auth/verify-phone', (req, res) => {
+app.post('/api/auth/verify-phone', async (req, res) => {
     const { phone, code } = req.body;
+    try {
+        const result = await pool.query(
+            'SELECT * FROM verification_codes WHERE phone = $1 AND code = $2 AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1',
+            [phone, code]
+        );
+        if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid or expired code' });
 
-    db.get(
-        `SELECT * FROM verification_codes WHERE phone = ? AND code = ? AND expires_at > datetime('now') ORDER BY created_at DESC LIMIT 1`,
-        [phone, code],
-        (err, verification) => {
-            if (err || !verification) {
-                return res.status(400).json({ error: 'Invalid or expired code' });
-            }
-
-            db.run(`UPDATE users SET phone_verified = 1 WHERE phone = ?`, [phone]);
-            res.json({ success: true });
-        }
-    );
+        await pool.query('UPDATE users SET phone_verified = true WHERE phone = $1', [phone]);
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: 'Verification failed' });
+    }
 });
 
 // ========== MOVIES ROUTES ==========
 
-// Get all movies
-app.get('/api/movies', (req, res) => {
-    db.all('SELECT * FROM movies WHERE is_active = 1 ORDER BY created_at DESC', (err, movies) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to fetch movies' });
-        }
-        res.json(movies);
-    });
+app.get('/api/movies', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM movies WHERE is_active = true ORDER BY created_at DESC');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch movies' });
+    }
 });
 
-// Get movie by ID
-app.get('/api/movies/:id', (req, res) => {
-    db.get('SELECT * FROM movies WHERE id = ?', [req.params.id], (err, movie) => {
-        if (err || !movie) {
-            return res.status(404).json({ error: 'Movie not found' });
-        }
-        res.json(movie);
-    });
+app.get('/api/movies/:id', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM movies WHERE id = $1', [req.params.id]);
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Movie not found' });
+        res.json(result.rows[0]);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch movie' });
+    }
 });
 
-// Create movie (Admin only)
-app.post('/api/movies', authenticateToken, isAdmin, (req, res) => {
+app.post('/api/movies', authenticateToken, isAdmin, async (req, res) => {
     const { title, genre, duration, description, poster_url, release_date, end_date } = req.body;
-
-    db.run(
-        `INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [title, genre, duration, description, poster_url, release_date, end_date],
-        function (err) {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to create movie' });
-            }
-            res.json({ id: this.lastID, message: 'Movie created successfully' });
-        }
-    );
+    try {
+        const result = await pool.query(
+            'INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
+            [title, genre, duration, description, poster_url, release_date, end_date]
+        );
+        res.json({ id: result.rows[0].id, message: 'Movie created successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create movie' });
+    }
 });
 
-// Update movie (Admin only)
-app.put('/api/movies/:id', authenticateToken, isAdmin, (req, res) => {
+app.put('/api/movies/:id', authenticateToken, isAdmin, async (req, res) => {
     const { title, genre, duration, description, poster_url, release_date, end_date, is_active } = req.body;
-
-    db.run(
-        `UPDATE movies SET title = ?, genre = ?, duration = ?, description = ?, 
-         poster_url = ?, release_date = ?, end_date = ?, is_active = ? WHERE id = ?`,
-        [title, genre, duration, description, poster_url, release_date, end_date, is_active, req.params.id],
-        (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to update movie' });
-            }
-            res.json({ message: 'Movie updated successfully' });
-        }
-    );
+    try {
+        await pool.query(
+            'UPDATE movies SET title=$1, genre=$2, duration=$3, description=$4, poster_url=$5, release_date=$6, end_date=$7, is_active=$8 WHERE id=$9',
+            [title, genre, duration, description, poster_url, release_date, end_date, is_active, req.params.id]
+        );
+        res.json({ message: 'Movie updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update movie' });
+    }
 });
 
-// Delete movie (Admin only)
-app.delete('/api/movies/:id', authenticateToken, isAdmin, (req, res) => {
-    db.run('UPDATE movies SET is_active = 0 WHERE id = ?', [req.params.id], (err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to delete movie' });
-        }
+app.delete('/api/movies/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        await pool.query('UPDATE movies SET is_active = false WHERE id = $1', [req.params.id]);
         res.json({ message: 'Movie deleted successfully' });
-    });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete movie' });
+    }
 });
 
 // ========== SHOWTIMES ROUTES ==========
 
-// Get showtimes for a movie
-app.get('/api/movies/:id/showtimes', (req, res) => {
-    db.all(
-        'SELECT * FROM showtimes WHERE movie_id = ? AND date >= date("now") ORDER BY date, time',
-        [req.params.id],
-        (err, showtimes) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to fetch showtimes' });
-            }
-            res.json(showtimes);
-        }
-    );
+app.get('/api/movies/:id/showtimes', async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM showtimes WHERE movie_id = $1 AND date >= CURRENT_DATE ORDER BY date, time',
+            [req.params.id]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch showtimes' });
+    }
 });
 
-// Create showtime (Admin only)
-app.post('/api/showtimes', authenticateToken, isAdmin, (req, res) => {
+app.post('/api/showtimes', authenticateToken, isAdmin, async (req, res) => {
     const { movie_id, date, time, room, price, total_seats } = req.body;
-
-    db.run(
-        `INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [movie_id, date, time, room, price || 3000, total_seats || 100, total_seats || 100],
-        function (err) {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to create showtime' });
-            }
-            res.json({ id: this.lastID, message: 'Showtime created successfully' });
-        }
-    );
+    try {
+        const result = await pool.query(
+            'INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats) VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING id',
+            [movie_id, date, time, room, price || 3000, total_seats || 100]
+        );
+        res.json({ id: result.rows[0].id, message: 'Showtime created successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create showtime' });
+    }
 });
 
-// Update showtime (Admin only)
-app.put('/api/showtimes/:id', authenticateToken, isAdmin, (req, res) => {
+app.put('/api/showtimes/:id', authenticateToken, isAdmin, async (req, res) => {
     const { date, time, room, price } = req.body;
-
-    db.run(
-        'UPDATE showtimes SET date = ?, time = ?, room = ?, price = ? WHERE id = ?',
-        [date, time, room, price, req.params.id],
-        (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to update showtime' });
-            }
-            res.json({ message: 'Showtime updated successfully' });
-        }
-    );
+    try {
+        await pool.query(
+            'UPDATE showtimes SET date=$1, time=$2, room=$3, price=$4 WHERE id=$5',
+            [date, time, room, price, req.params.id]
+        );
+        res.json({ message: 'Showtime updated successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update showtime' });
+    }
 });
 
-// Delete showtime (Admin only)
-app.delete('/api/showtimes/:id', authenticateToken, isAdmin, (req, res) => {
-    db.run('DELETE FROM showtimes WHERE id = ?', [req.params.id], (err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to delete showtime' });
-        }
+app.delete('/api/showtimes/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM showtimes WHERE id = $1', [req.params.id]);
         res.json({ message: 'Showtime deleted successfully' });
-    });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to delete showtime' });
+    }
 });
 
 // ========== BOOKINGS ROUTES ==========
 
-// Create booking
-app.post('/api/bookings', authenticateToken, (req, res) => {
+app.post('/api/bookings', authenticateToken, async (req, res) => {
     const { showtime_id, seats, total_price } = req.body;
     const user_id = req.user.id;
 
-    // Check seat availability
-    db.get('SELECT * FROM showtimes WHERE id = ?', [showtime_id], (err, showtime) => {
-        if (err || !showtime) {
-            return res.status(404).json({ error: 'Showtime not found' });
-        }
+    try {
+        const showtimeResult = await pool.query('SELECT * FROM showtimes WHERE id = $1', [showtime_id]);
+        if (showtimeResult.rows.length === 0) return res.status(404).json({ error: 'Showtime not found' });
 
-        if (showtime.available_seats < seats.length) {
-            return res.status(400).json({ error: 'Not enough available seats' });
-        }
+        const showtime = showtimeResult.rows[0];
+        if (showtime.available_seats < seats.length) return res.status(400).json({ error: 'Not enough available seats' });
 
-        // Create booking
-        db.run(
-            `INSERT INTO bookings (user_id, showtime_id, seats, total_price) VALUES (?, ?, ?, ?)`,
-            [user_id, showtime_id, JSON.stringify(seats), total_price],
-            function (err) {
-                if (err) {
-                    return res.status(500).json({ error: 'Failed to create booking' });
-                }
-
-                // Update available seats
-                db.run(
-                    'UPDATE showtimes SET available_seats = available_seats - ? WHERE id = ?',
-                    [seats.length, showtime_id]
-                );
-
-                // Send confirmation email
-                sendBookingConfirmation(user_id, this.lastID);
-
-                res.json({ id: this.lastID, message: 'Booking created successfully' });
-            }
+        const result = await pool.query(
+            'INSERT INTO bookings (user_id, showtime_id, seats, total_price) VALUES ($1, $2, $3, $4) RETURNING id',
+            [user_id, showtime_id, JSON.stringify(seats), total_price]
         );
-    });
+
+        await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [seats.length, showtime_id]);
+        res.json({ id: result.rows[0].id, message: 'Booking created successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to create booking' });
+    }
 });
 
-// Get user bookings
-app.get('/api/bookings', authenticateToken, (req, res) => {
-    db.all(
-        `SELECT b.*, m.title as movie_title, s.date, s.time, s.room 
-         FROM bookings b 
-         JOIN showtimes s ON b.showtime_id = s.id 
-         JOIN movies m ON s.movie_id = m.id 
-         WHERE b.user_id = ? 
-         ORDER BY b.booking_time DESC`,
-        [req.user.id],
-        (err, bookings) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to fetch bookings' });
-            }
-            res.json(bookings);
-        }
-    );
+app.get('/api/bookings', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT b.*, m.title as movie_title, s.date, s.time, s.room 
+            FROM bookings b 
+            JOIN showtimes s ON b.showtime_id = s.id 
+            JOIN movies m ON s.movie_id = m.id 
+            WHERE b.user_id = $1 
+            ORDER BY b.booking_time DESC
+        `, [req.user.id]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch bookings' });
+    }
 });
 
-// Cancel booking
-app.put('/api/bookings/:id/cancel', authenticateToken, (req, res) => {
-    db.get(
-        `SELECT b.*, s.date, s.time FROM bookings b 
-         JOIN showtimes s ON b.showtime_id = s.id 
-         WHERE b.id = ? AND b.user_id = ?`,
-        [req.params.id, req.user.id],
-        (err, booking) => {
-            if (err || !booking) {
-                return res.status(404).json({ error: 'Booking not found' });
-            }
+app.put('/api/bookings/:id/cancel', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT b.*, s.date, s.time FROM bookings b 
+            JOIN showtimes s ON b.showtime_id = s.id 
+            WHERE b.id = $1 AND b.user_id = $2
+        `, [req.params.id, req.user.id]);
 
-            // Check if cancellation is allowed (25 minutes before showtime)
-            const showtimeDate = new Date(`${booking.date} ${booking.time}`);
-            const now = new Date();
-            const timeDiff = (showtimeDate - now) / (1000 * 60); // minutes
+        if (result.rows.length === 0) return res.status(404).json({ error: 'Booking not found' });
 
-            if (timeDiff < 25) {
-                return res.status(400).json({ error: 'Cannot cancel less than 25 minutes before showtime' });
-            }
+        const booking = result.rows[0];
+        const showtimeDate = new Date(`${booking.date} ${booking.time}`);
+        const timeDiff = (showtimeDate - new Date()) / (1000 * 60);
 
-            db.run('UPDATE bookings SET status = "cancelled" WHERE id = ?', [req.params.id], (err) => {
-                if (err) {
-                    return res.status(500).json({ error: 'Failed to cancel booking' });
-                }
+        if (timeDiff < 25) return res.status(400).json({ error: 'Cannot cancel less than 25 minutes before showtime' });
 
-                // Restore available seats
-                const seats = JSON.parse(booking.seats);
-                db.run(
-                    'UPDATE showtimes SET available_seats = available_seats + ? WHERE id = ?',
-                    [seats.length, booking.showtime_id]
-                );
+        await pool.query('UPDATE bookings SET status = $1 WHERE id = $2', ['cancelled', req.params.id]);
+        await pool.query('UPDATE showtimes SET available_seats = available_seats + $1 WHERE id = $2',
+            [JSON.parse(booking.seats).length, booking.showtime_id]);
 
-                res.json({ message: 'Booking cancelled successfully' });
-            });
-        }
-    );
+        res.json({ message: 'Booking cancelled successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to cancel booking' });
+    }
 });
 
 // ========== RATINGS ROUTES ==========
 
-// Rate a movie
-app.post('/api/ratings', authenticateToken, (req, res) => {
+app.post('/api/ratings', authenticateToken, async (req, res) => {
     const { movie_id, rating } = req.body;
-    const user_id = req.user.id;
+    try {
+        await pool.query(
+            'INSERT INTO ratings (user_id, movie_id, rating) VALUES ($1, $2, $3) ON CONFLICT (user_id, movie_id) DO UPDATE SET rating = $3',
+            [req.user.id, movie_id, rating]
+        );
 
-    db.run(
-        `INSERT OR REPLACE INTO ratings (user_id, movie_id, rating) VALUES (?, ?, ?)`,
-        [user_id, movie_id, rating],
-        (err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to rate movie' });
-            }
+        const avgResult = await pool.query('SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM ratings WHERE movie_id = $1', [movie_id]);
+        await pool.query('UPDATE movies SET rating = $1, votes_count = $2 WHERE id = $3',
+            [avgResult.rows[0].avg_rating, avgResult.rows[0].count, movie_id]);
 
-            // Update movie rating
-            updateMovieRating(movie_id);
-            res.json({ message: 'Rating submitted successfully' });
-        }
-    );
+        res.json({ message: 'Rating submitted successfully' });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to rate movie' });
+    }
 });
-
-function updateMovieRating(movie_id) {
-    db.get(
-        'SELECT AVG(rating) as avg_rating, COUNT(*) as count FROM ratings WHERE movie_id = ?',
-        [movie_id],
-        (err, result) => {
-            if (!err && result) {
-                db.run(
-                    'UPDATE movies SET rating = ?, votes_count = ? WHERE id = ?',
-                    [result.avg_rating, result.count, movie_id]
-                );
-            }
-        }
-    );
-}
 
 // ========== NEWSLETTER ROUTES ==========
 
-app.post('/api/newsletter/subscribe', (req, res) => {
+app.post('/api/newsletter/subscribe', async (req, res) => {
     const { email } = req.body;
-
-    db.run('INSERT OR IGNORE INTO newsletter (email) VALUES (?)', [email], (err) => {
-        if (err) {
-            return res.status(500).json({ error: 'Subscription failed' });
-        }
+    try {
+        await pool.query('INSERT INTO newsletter (email) VALUES ($1) ON CONFLICT (email) DO NOTHING', [email]);
         res.json({ message: 'Subscribed successfully' });
-    });
+    } catch (error) {
+        res.status(500).json({ error: 'Subscription failed' });
+    }
 });
 
 // ========== ADMIN ROUTES ==========
 
-// Get all users (Admin only)
-app.get('/api/admin/users', authenticateToken, isAdmin, (req, res) => {
-    db.all('SELECT id, name, email, phone, is_admin, email_notifications, phone_verified, created_at FROM users', (err, users) => {
-        if (err) {
-            return res.status(500).json({ error: 'Failed to fetch users' });
-        }
-        res.json(users);
-    });
+app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT id, name, email, phone, is_admin, email_notifications, phone_verified, created_at FROM users');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch users' });
+    }
 });
 
-// Get all bookings (Admin only)
-app.get('/api/admin/bookings', authenticateToken, isAdmin, (req, res) => {
-    db.all(
-        `SELECT b.*, u.name as user_name, u.email, m.title as movie_title, s.date, s.time, s.room 
-         FROM bookings b 
-         JOIN users u ON b.user_id = u.id 
-         JOIN showtimes s ON b.showtime_id = s.id 
-         JOIN movies m ON s.movie_id = m.id 
-         ORDER BY b.booking_time DESC`,
-        (err, bookings) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to fetch bookings' });
-            }
-            res.json(bookings);
-        }
-    );
+app.get('/api/admin/bookings', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT b.*, u.name as user_name, u.email, m.title as movie_title, s.date, s.time, s.room 
+            FROM bookings b 
+            JOIN users u ON b.user_id = u.id 
+            JOIN showtimes s ON b.showtime_id = s.id 
+            JOIN movies m ON s.movie_id = m.id 
+            ORDER BY b.booking_time DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch bookings' });
+    }
 });
 
-// Get statistics (Admin only)
-app.get('/api/admin/stats', authenticateToken, isAdmin, (req, res) => {
-    Promise.all([
-        new Promise((resolve) => db.get('SELECT COUNT(*) as count FROM users', (err, result) => resolve(result?.count || 0))),
-        new Promise((resolve) => db.get('SELECT COUNT(*) as count FROM bookings WHERE status = "confirmed"', (err, result) => resolve(result?.count || 0))),
-        new Promise((resolve) => db.get('SELECT SUM(total_price) as revenue FROM bookings WHERE status = "confirmed"', (err, result) => resolve(result?.revenue || 0))),
-        new Promise((resolve) => db.get('SELECT COUNT(*) as count FROM movies WHERE is_active = 1', (err, result) => resolve(result?.count || 0)))
-    ]).then(([users, bookings, revenue, movies]) => {
-        res.json({ users, bookings, revenue, movies });
-    });
-});
+app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const users = await pool.query('SELECT COUNT(*) FROM users');
+        const bookings = await pool.query('SELECT COUNT(*) FROM bookings WHERE status = $1', ['confirmed']);
+        const revenue = await pool.query('SELECT SUM(total_price) FROM bookings WHERE status = $1', ['confirmed']);
+        const movies = await pool.query('SELECT COUNT(*) FROM movies WHERE is_active = true');
 
-// Helper function to send booking confirmation email
-function sendBookingConfirmation(user_id, booking_id) {
-    db.get('SELECT * FROM users WHERE id = ?', [user_id], (err, user) => {
-        if (err || !user || !user.email_notifications) return;
-
-        const mailOptions = {
-            from: 'noreply@sylver-screen.com',
-            to: user.email,
-            subject: 'Confirmation de réservation - Sylver Screen Cinema',
-            html: `
-                <h2>Merci pour votre réservation !</h2>
-                <p>Bonjour ${user.name},</p>
-                <p>Votre réservation #${booking_id} a été confirmée.</p>
-                <p>Vous pouvez annuler jusqu'à 25 minutes avant la séance.</p>
-                <br>
-                <p>À bientôt au Sylver Screen Cinema !</p>
-            `
-        };
-
-        transporter.sendMail(mailOptions, (error, info) => {
-            if (error) {
-                console.log('Error sending email:', error);
-            } else {
-                console.log('Email sent:', info.response);
-            }
+        res.json({
+            users: parseInt(users.rows[0].count),
+            bookings: parseInt(bookings.rows[0].count),
+            revenue: parseFloat(revenue.rows[0].sum) || 0,
+            movies: parseInt(movies.rows[0].count)
         });
-    });
-}
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch stats' });
+    }
+});
 
 // Start server
 app.listen(PORT, () => {
@@ -615,6 +490,8 @@ app.listen(PORT, () => {
 ║                                                       ║
 ║     📍 Site public: http://localhost:${PORT}/index.html      ║
 ║     👨‍💼 Admin panel: http://localhost:${PORT}/admin.html     ║
+║                                                       ║
+║     🗄️  Database: PostgreSQL (Supabase)              ║
 ║                                                       ║
 ║     🔐 Admin login:                                   ║
 ║        Email: admin@sylver-screen.com                 ║
