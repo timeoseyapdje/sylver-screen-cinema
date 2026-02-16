@@ -165,7 +165,9 @@ function isAdmin(req, res, next) {
 // ========== AUTH ROUTES ==========
 
 app.post('/api/auth/register', async (req, res) => {
+    console.log('📍 POST /api/auth/register - Request received');
     const { name, email, phone, password, emailNotifications } = req.body;
+    console.log(`   Registration attempt: ${email}`);
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
@@ -174,6 +176,8 @@ app.post('/api/auth/register', async (req, res) => {
         );
         const userId = result.rows[0].id;
         const token = jwt.sign({ id: userId, email, is_admin: false }, JWT_SECRET);
+
+        console.log(`✅ User registered successfully: ${email}`);
 
         if (emailNotifications) {
             const welcomeHTML = `
@@ -191,23 +195,33 @@ app.post('/api/auth/register', async (req, res) => {
 
         res.json({ token, user: { id: userId, name, email, phone, is_admin: false } });
     } catch (error) {
+        console.error('❌ Registration error:', error);
         res.status(400).json({ error: 'Cet utilisateur existe déjà' });
     }
 });
 
 app.post('/api/auth/login', async (req, res) => {
+    console.log('📍 POST /api/auth/login - Request received');
     const { email, password } = req.body;
     try {
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-        if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid credentials' });
+        if (result.rows.length === 0) {
+            console.log(`❌ User not found: ${email}`);
+            return res.status(400).json({ error: 'Invalid credentials' });
+        }
 
         const user = result.rows[0];
         const validPassword = await bcrypt.compare(password, user.password);
-        if (!validPassword) return res.status(400).json({ error: 'Invalid credentials' });
+        if (!validPassword) {
+            console.log(`❌ Invalid password for: ${email}`);
+            return res.status(400).json({ error: 'Invalid credentials' });
+        }
 
         const token = jwt.sign({ id: user.id, email: user.email, is_admin: user.is_admin }, JWT_SECRET);
+        console.log(`✅ Login successful: ${email}`);
         res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, is_admin: user.is_admin } });
     } catch (error) {
+        console.error('❌ Login error:', error);
         res.status(500).json({ error: 'Login failed' });
     }
 });
@@ -252,11 +266,36 @@ app.post('/api/auth/verify-phone', async (req, res) => {
 
 // ========== MOVIES ROUTES ==========
 
+// Debug endpoint
+app.get('/api/debug', async (req, res) => {
+    try {
+        const moviesCount = await pool.query('SELECT COUNT(*) FROM movies');
+        const usersCount = await pool.query('SELECT COUNT(*) FROM users');
+        const showtimesCount = await pool.query('SELECT COUNT(*) FROM showtimes');
+
+        res.json({
+            status: 'OK',
+            database: 'Connected',
+            movies: parseInt(moviesCount.rows[0].count),
+            users: parseInt(usersCount.rows[0].count),
+            showtimes: parseInt(showtimesCount.rows[0].count)
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 'ERROR',
+            error: error.message
+        });
+    }
+});
+
 app.get('/api/movies', async (req, res) => {
+    console.log('📍 GET /api/movies - Request received');
     try {
         const result = await pool.query('SELECT * FROM movies WHERE is_active = true ORDER BY created_at DESC');
+        console.log(`✅ Found ${result.rows.length} movies`);
         res.json(result.rows);
     } catch (error) {
+        console.error('❌ Error fetching movies:', error);
         res.status(500).json({ error: 'Failed to fetch movies' });
     }
 });
