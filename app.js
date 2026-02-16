@@ -8,7 +8,7 @@ let movies = [];
 let showtimes = [];
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     checkAuth();
     loadMovies();
 });
@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function checkAuth() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
-    
+
     if (token && user) {
         authToken = token;
         currentUser = JSON.parse(user);
         updateNavigation();
-        
+
         // Redirect to admin if admin user
         if (currentUser.is_admin && window.location.pathname === '/index.html') {
             // Don't auto-redirect, let user choose
@@ -32,17 +32,58 @@ function checkAuth() {
 }
 
 function updateNavigation() {
-    const authBtn = document.getElementById('authBtn');
+    const loginBtn = document.getElementById('loginBtn');
+    const registerBtn = document.getElementById('registerBtn');
+
     if (currentUser) {
-        authBtn.textContent = currentUser.is_admin ? 'ADMIN' : currentUser.name.toUpperCase();
-        authBtn.onclick = () => {
-            if (currentUser.is_admin) {
-                window.location.href = 'admin.html';
-            } else {
-                alert('Mon compte (à développer)');
-            }
-        };
+        // Utilisateur connecté
+        if (currentUser.is_admin) {
+            loginBtn.textContent = '👨‍💼 ADMIN';
+            loginBtn.onclick = () => window.location.href = 'admin.html';
+        } else {
+            loginBtn.textContent = '👤 ' + currentUser.name.toUpperCase();
+            loginBtn.onclick = () => alert('Mon compte (fonctionnalité à venir)');
+        }
+
+        // Cacher le bouton "Créer un compte"
+        if (registerBtn) {
+            registerBtn.style.display = 'none';
+        }
+
+        // Ajouter un bouton de déconnexion
+        if (!document.getElementById('logoutBtn')) {
+            const logoutBtn = document.createElement('button');
+            logoutBtn.id = 'logoutBtn';
+            logoutBtn.className = 'btn-black';
+            logoutBtn.textContent = 'Déconnexion';
+            logoutBtn.onclick = logout;
+            document.getElementById('navLinks').appendChild(logoutBtn);
+        }
+    } else {
+        // Utilisateur non connecté
+        loginBtn.textContent = 'CONNEXION';
+        loginBtn.onclick = openLoginModal;
+
+        if (registerBtn) {
+            registerBtn.style.display = 'inline-block';
+        }
+
+        // Supprimer le bouton de déconnexion si présent
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.remove();
+        }
     }
+}
+
+function logout() {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('currentUser');
+    authToken = null;
+    currentUser = null;
+    updateNavigation();
+    alert('Déconnexion réussie !');
+    window.location.reload();
 }
 
 async function login(event) {
@@ -58,16 +99,16 @@ async function login(event) {
         });
 
         const data = await response.json();
-        
+
         if (response.ok) {
             authToken = data.token;
             currentUser = data.user;
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
+
             closeModal('loginModal');
             updateNavigation();
-            
+
             if (currentUser.is_admin) {
                 if (confirm('Vous êtes connecté en tant qu\'administrateur. Accéder au panel admin ?')) {
                     window.location.href = 'admin.html';
@@ -86,28 +127,27 @@ async function login(event) {
 
 async function registerStep1(event) {
     event.preventDefault();
-    
+
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
     const phone = document.getElementById('registerPhone').value;
-    const method = document.getElementById('verificationMethod').value;
 
     try {
         const response = await fetch(`${API_URL}/auth/send-verification`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, method })
+            body: JSON.stringify({ phone })
         });
 
         if (response.ok) {
             // Store registration data temporarily
             sessionStorage.setItem('registrationData', JSON.stringify({
-                name, email, phone, method,
+                name, email, phone,
                 password: document.getElementById('registerPassword').value,
                 emailNotifications: document.getElementById('newsletterOptIn').checked
             }));
 
-            document.getElementById('methodUsed').textContent = method === 'whatsapp' ? 'WhatsApp' : 'SMS';
+            document.getElementById('methodUsed').textContent = 'SMS';
             document.getElementById('registerStep1').classList.add('hidden');
             document.getElementById('registerStep2').classList.remove('hidden');
         } else {
@@ -121,7 +161,7 @@ async function registerStep1(event) {
 
 async function verifyPhone(event) {
     event.preventDefault();
-    
+
     const code = ['code1', 'code2', 'code3', 'code4', 'code5', 'code6']
         .map(id => document.getElementById(id).value)
         .join('');
@@ -155,12 +195,12 @@ async function verifyPhone(event) {
             currentUser = data.user;
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-            
+
             sessionStorage.removeItem('registrationData');
             closeModal('registerModal');
             updateNavigation();
             alert('Compte créé avec succès !');
-            
+
             // Reset form
             document.getElementById('registerStep1').classList.remove('hidden');
             document.getElementById('registerStep2').classList.add('hidden');
@@ -195,7 +235,7 @@ async function loadMovies() {
 
 function displayMovies(moviesData) {
     const grid = document.getElementById('moviesGrid');
-    
+
     if (moviesData.length === 0) {
         grid.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Aucun film à l\'affiche pour le moment</p>';
         return;
@@ -224,7 +264,7 @@ function displayMovies(moviesData) {
 
 async function showMovieDetails(movieId) {
     currentMovie = movies.find(m => m.id === movieId);
-    
+
     document.getElementById('movieTitle').textContent = currentMovie.title;
     document.getElementById('movieDetails').innerHTML = `
         <div style="text-align: center; margin-bottom: 2rem;">
@@ -235,7 +275,7 @@ async function showMovieDetails(movieId) {
         <p><strong>Note moyenne:</strong> ${currentMovie.rating.toFixed(1)}/5 (${currentMovie.votes_count} votes)</p>
         <p style="margin-top: 1.5rem; line-height: 1.8;">${currentMovie.description || 'Aucune description disponible.'}</p>
     `;
-    
+
     openModal('movieModal');
 }
 
@@ -287,32 +327,32 @@ async function openBookingModal() {
     }
 
     const select = document.getElementById('bookingMovie');
-    select.innerHTML = movies.map(m => 
+    select.innerHTML = movies.map(m =>
         `<option value="${m.id}" ${m.id === currentMovie?.id ? 'selected' : ''}>${m.title}</option>`
     ).join('');
-    
+
     await updateShowtimes();
     openModal('bookingModal');
 }
 
 async function updateShowtimes() {
     const movieId = parseInt(document.getElementById('bookingMovie').value);
-    
+
     try {
         const response = await fetch(`${API_URL}/movies/${movieId}/showtimes`);
         showtimes = await response.json();
-        
+
         const select = document.getElementById('bookingShowtime');
-        
+
         if (showtimes.length === 0) {
             select.innerHTML = '<option>Aucune séance disponible</option>';
             return;
         }
-        
-        select.innerHTML = showtimes.map(st => 
+
+        select.innerHTML = showtimes.map(st =>
             `<option value="${st.id}">${st.date} à ${st.time} - ${st.room} (${st.available_seats} places)</option>`
         ).join('');
-        
+
         loadSeats();
     } catch (error) {
         console.error('Load showtimes error:', error);
@@ -322,16 +362,16 @@ async function updateShowtimes() {
 function loadSeats() {
     const grid = document.getElementById('seatsGrid');
     selectedSeats = [];
-    
+
     const showtimeId = parseInt(document.getElementById('bookingShowtime').value);
     const showtime = showtimes.find(s => s.id === showtimeId);
-    
+
     if (!showtime) return;
-    
+
     const totalSeats = showtime.total_seats;
     const occupiedCount = totalSeats - showtime.available_seats;
     const occupiedSeats = [];
-    
+
     // Generate random occupied seats for demo
     for (let i = 0; i < occupiedCount; i++) {
         let seat;
@@ -340,7 +380,7 @@ function loadSeats() {
         } while (occupiedSeats.includes(seat));
         occupiedSeats.push(seat);
     }
-    
+
     let seatsHTML = '';
     for (let i = 1; i <= totalSeats; i++) {
         const isOccupied = occupiedSeats.includes(i);
@@ -352,7 +392,7 @@ function loadSeats() {
             </div>
         `;
     }
-    
+
     grid.innerHTML = seatsHTML;
     updateBookingSummary();
 }
@@ -360,7 +400,7 @@ function loadSeats() {
 function toggleSeat(seatNumber) {
     const seat = document.querySelector(`[data-seat="${seatNumber}"]`);
     const index = selectedSeats.indexOf(seatNumber);
-    
+
     if (index > -1) {
         selectedSeats.splice(index, 1);
         seat.classList.remove('selected');
@@ -368,7 +408,7 @@ function toggleSeat(seatNumber) {
         selectedSeats.push(seatNumber);
         seat.classList.add('selected');
     }
-    
+
     updateBookingSummary();
 }
 
@@ -419,7 +459,7 @@ async function confirmBooking() {
 
 async function subscribeNewsletter() {
     const email = document.getElementById('newsletterEmail').value;
-    
+
     if (!email) {
         alert('Veuillez entrer votre email');
         return;
@@ -476,7 +516,7 @@ function openRegisterModal() {
 
 // Close modal on outside click
 document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             closeModal(modal.id);
         }

@@ -16,14 +16,18 @@
     <header>
         <nav>
             <div class="logo-container">
+                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83"
+                    alt="Sylver Screen" class="logo-img">
                 <div class="logo-text">SYLVER SCREEN</div>
             </div>
             <div class="nav-links" id="navLinks">
                 <a href="#home">Accueil</a>
-                <a href="#movies">Films</a>
+                <a href="#movies">Films à l'affiche</a>
                 <a href="#experience">Expérience</a>
                 <a href="#contact">Contact</a>
-                <button class="btn-white" id="authBtn" onclick="openLoginModal()">Connexion</button>
+                <button class="btn-white" id="loginBtn" onclick="openLoginModal()">Connexion</button>
+                <button class="btn-black" id="registerBtn" onclick="openRegisterModal()"
+                    style="display: inline-block;">Créer un compte</button>
             </div>
         </nav>
     </header>
@@ -105,7 +109,10 @@
             <div class="footer-section">
                 <h3>Sylver Screen Cinema</h3>
                 <p>Douala Grand Mall<br>Route de l'Aéroport<br>Douala, Cameroun</p>
-                <p style="margin-top: 1.5rem;">Tél: +237 XXX XXX XXX<br>Email: contact@sylver-screen.com</p>
+                <p style="margin-top: 1.5rem;">Tél: +237 XXX XXX XXX<br>Email: <a href="/cdn-cgi/l/email-protection"
+                        class="__cf_email__"
+                        data-cfemail="a7c4c8c9d3c6c4d3e7d4decbd1c2d58ad4c4d5c2c2c989c4c8ca">[email&#160;protected]</a>
+                </p>
             </div>
             <div class="footer-section">
                 <h3>Navigation</h3>
@@ -180,13 +187,9 @@
                         <div class="form-group">
                             <label>Téléphone</label>
                             <input type="tel" id="registerPhone" placeholder="+237 XXX XXX XXX" required>
-                        </div>
-                        <div class="form-group">
-                            <label>Vérification par</label>
-                            <select id="verificationMethod" required>
-                                <option value="whatsapp">WhatsApp</option>
-                                <option value="sms">SMS</option>
-                            </select>
+                            <small
+                                style="color: var(--text-gray); font-size: 0.85rem; display: block; margin-top: 0.5rem;">Un
+                                code de vérification sera envoyé par SMS</small>
                         </div>
                         <div class="form-group">
                             <label>Mot de passe</label>
@@ -281,13 +284,4 @@
                 <div class="alert">
                     Annulation gratuite jusqu'à 25 minutes avant
                 </div>
-                <button class="btn-white" style="width: 100%; margin-top: 2rem;"
-                    onclick="confirmBooking()">Confirmer</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
-</body>
-
-</html>
+                <button class="btn-white" style="width: 100%; margin-top: 2rem;" onclick="confir

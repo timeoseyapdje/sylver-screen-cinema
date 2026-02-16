@@ -1,4 +1,5 @@
-// server.js - Backend avec PostgreSQL (Supabase)
+// server.js - Backend avec PostgreSQL (Supabase) et Africa's Talking
+require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
@@ -6,6 +7,7 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const AfricasTalking = require('africastalking');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,99 +37,82 @@ pool.query('SELECT NOW()', (err, res) => {
 // Initialize database tables
 async function initDatabase() {
     try {
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS users (
-                id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                phone TEXT UNIQUE NOT NULL,
-                password TEXT NOT NULL,
-                is_admin BOOLEAN DEFAULT false,
-                email_notifications BOOLEAN DEFAULT true,
-                phone_verified BOOLEAN DEFAULT false,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS users (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            phone TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            is_admin BOOLEAN DEFAULT false,
+            email_notifications BOOLEAN DEFAULT true,
+            phone_verified BOOLEAN DEFAULT false,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS movies (
-                id SERIAL PRIMARY KEY,
-                title TEXT NOT NULL,
-                genre TEXT NOT NULL,
-                duration INTEGER NOT NULL,
-                description TEXT,
-                poster_url TEXT,
-                rating REAL DEFAULT 0,
-                votes_count INTEGER DEFAULT 0,
-                release_date DATE,
-                end_date DATE,
-                is_active BOOLEAN DEFAULT true,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS movies (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            genre TEXT NOT NULL,
+            duration INTEGER NOT NULL,
+            description TEXT,
+            poster_url TEXT,
+            rating REAL DEFAULT 0,
+            votes_count INTEGER DEFAULT 0,
+            release_date DATE,
+            end_date DATE,
+            is_active BOOLEAN DEFAULT true,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS showtimes (
-                id SERIAL PRIMARY KEY,
-                movie_id INTEGER NOT NULL REFERENCES movies(id),
-                date DATE NOT NULL,
-                time TIME NOT NULL,
-                room TEXT NOT NULL,
-                price REAL DEFAULT 3000,
-                total_seats INTEGER DEFAULT 100,
-                available_seats INTEGER DEFAULT 100
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS showtimes (
+            id SERIAL PRIMARY KEY,
+            movie_id INTEGER NOT NULL REFERENCES movies(id),
+            date DATE NOT NULL,
+            time TIME NOT NULL,
+            room TEXT NOT NULL,
+            price REAL DEFAULT 3000,
+            total_seats INTEGER DEFAULT 100,
+            available_seats INTEGER DEFAULT 100
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS bookings (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id),
-                showtime_id INTEGER NOT NULL REFERENCES showtimes(id),
-                seats TEXT NOT NULL,
-                total_price REAL NOT NULL,
-                status TEXT DEFAULT 'confirmed',
-                booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            showtime_id INTEGER NOT NULL REFERENCES showtimes(id),
+            seats TEXT NOT NULL,
+            total_price REAL NOT NULL,
+            status TEXT DEFAULT 'confirmed',
+            booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS ratings (
-                id SERIAL PRIMARY KEY,
-                user_id INTEGER NOT NULL REFERENCES users(id),
-                movie_id INTEGER NOT NULL REFERENCES movies(id),
-                rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                UNIQUE(user_id, movie_id)
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS ratings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL REFERENCES users(id),
+            movie_id INTEGER NOT NULL REFERENCES movies(id),
+            rating INTEGER NOT NULL CHECK(rating >= 1 AND rating <= 5),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, movie_id)
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS verification_codes (
-                id SERIAL PRIMARY KEY,
-                phone TEXT NOT NULL,
-                code TEXT NOT NULL,
-                method TEXT NOT NULL,
-                expires_at TIMESTAMP NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS verification_codes (
+            id SERIAL PRIMARY KEY,
+            phone TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        await pool.query(`
-            CREATE TABLE IF NOT EXISTS newsletter (
-                id SERIAL PRIMARY KEY,
-                email TEXT UNIQUE NOT NULL,
-                subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        `);
+        await pool.query(`CREATE TABLE IF NOT EXISTS newsletter (
+            id SERIAL PRIMARY KEY,
+            email TEXT UNIQUE NOT NULL,
+            subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        // Create admin user
         const adminPassword = await bcrypt.hash('admin123', 10);
-        await pool.query(`
-            INSERT INTO users (name, email, phone, password, is_admin, phone_verified)
-            VALUES ($1, $2, $3, $4, $5, $6)
-            ON CONFLICT (email) DO NOTHING
-        `, ['Admin', 'admin@sylver-screen.com', '+237000000000', adminPassword, true, true]);
+        await pool.query(`INSERT INTO users (name, email, phone, password, is_admin, phone_verified)
+            VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING`,
+            ['Admin', 'admin@sylver-screen.com', '+237000000000', adminPassword, true, true]
+        );
 
         console.log('✅ Database initialized successfully');
     } catch (error) {
@@ -144,13 +129,66 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+// Africa's Talking configuration
+let smsClient = null;
+if (process.env.AFRICASTALKING_USERNAME && process.env.AFRICASTALKING_API_KEY) {
+    const africastalking = AfricasTalking({
+        apiKey: process.env.AFRICASTALKING_API_KEY,
+        username: process.env.AFRICASTALKING_USERNAME
+    });
+    smsClient = africastalking.SMS;
+    console.log('✅ Africa\'s Talking SMS configured');
+} else {
+    console.log('⚠️  Africa\'s Talking not configured - SMS will run in simulation mode');
+}
+
+// Helper functions
+async function sendEmail(to, subject, html) {
+    try {
+        const info = await transporter.sendMail({
+            from: `"Sylver Screen Cinema" <${process.env.EMAIL_USER || 'noreply@sylver-screen.com'}>`,
+            to: to,
+            subject: subject,
+            html: html
+        });
+        console.log('✅ Email sent:', info.messageId);
+        return true;
+    } catch (error) {
+        console.error('❌ Email error:', error);
+        return false;
+    }
+}
+
+async function sendSMS(to, message) {
+    if (!smsClient) {
+        console.log('📱 SMS simulation (Africa\'s Talking not configured):');
+        console.log(`   To: ${to}`);
+        console.log(`   Message: ${message}`);
+        return true;
+    }
+
+    try {
+        const result = await smsClient.send({
+            to: [to],
+            message: message,
+            from: process.env.AFRICASTALKING_SHORTCODE || null
+        });
+        console.log('✅ SMS sent via Africa\'s Talking:', result);
+        return true;
+    } catch (error) {
+        console.error('❌ SMS error:', error);
+        console.log('📱 Fallback to simulation:');
+        console.log(`   To: ${to}`);
+        console.log(`   Message: ${message}`);
+        return true;
+    }
+}
+
 // Auth middleware
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-
     if (!token) return res.status(401).json({ error: 'Access denied' });
-
     jwt.verify(token, JWT_SECRET, (err, user) => {
         if (err) return res.status(403).json({ error: 'Invalid token' });
         req.user = user;
@@ -173,10 +211,26 @@ app.post('/api/auth/register', async (req, res) => {
             'INSERT INTO users (name, email, phone, password, email_notifications) VALUES ($1, $2, $3, $4, $5) RETURNING id',
             [name, email, phone, hashedPassword, emailNotifications]
         );
-        const token = jwt.sign({ id: result.rows[0].id, email, is_admin: false }, JWT_SECRET);
-        res.json({ token, user: { id: result.rows[0].id, name, email, phone, is_admin: false } });
+        const userId = result.rows[0].id;
+        const token = jwt.sign({ id: userId, email, is_admin: false }, JWT_SECRET);
+
+        if (emailNotifications) {
+            const welcomeHTML = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #000;">Bienvenue chez Sylver Screen Cinema ! 🎬</h1>
+                    <p>Bonjour <strong>${name}</strong>,</p>
+                    <p>Merci de vous être inscrit(e). Vous pouvez maintenant réserver vos places en ligne !</p>
+                    <p>À bientôt au cinéma !</p>
+                    <hr style="margin: 30px 0;">
+                    <p style="color: #999; font-size: 12px;">Sylver Screen Cinema - Douala Grand Mall</p>
+                </div>
+            `;
+            await sendEmail(email, 'Bienvenue chez Sylver Screen Cinema ! 🎬', welcomeHTML);
+        }
+
+        res.json({ token, user: { id: userId, name, email, phone, is_admin: false } });
     } catch (error) {
-        res.status(400).json({ error: 'User already exists' });
+        res.status(400).json({ error: 'Cet utilisateur existe déjà' });
     }
 });
 
@@ -198,19 +252,24 @@ app.post('/api/auth/login', async (req, res) => {
 });
 
 app.post('/api/auth/send-verification', async (req, res) => {
-    const { phone, method } = req.body;
+    const { phone } = req.body;
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
 
     try {
         await pool.query(
-            'INSERT INTO verification_codes (phone, code, method, expires_at) VALUES ($1, $2, $3, $4)',
-            [phone, code, method, expiresAt]
+            'INSERT INTO verification_codes (phone, code, expires_at) VALUES ($1, $2, $3)',
+            [phone, code, expiresAt]
         );
-        console.log(`Verification code for ${phone} via ${method}: ${code}`);
-        res.json({ success: true, message: 'Code sent successfully' });
+
+        const message = `Votre code de vérification Sylver Screen Cinema est: ${code}\n\nValide pendant 10 minutes.`;
+        await sendSMS(phone, message);
+
+        console.log(`📱 Code de vérification pour ${phone}: ${code}`);
+        res.json({ success: true, message: 'Code envoyé avec succès' });
     } catch (error) {
-        res.status(500).json({ error: 'Failed to send code' });
+        console.error('Erreur envoi code:', error);
+        res.status(500).json({ error: 'Échec d\'envoi du code' });
     }
 });
 
@@ -316,8 +375,7 @@ app.post('/api/showtimes', authenticateToken, isAdmin, async (req, res) => {
 app.put('/api/showtimes/:id', authenticateToken, isAdmin, async (req, res) => {
     const { date, time, room, price } = req.body;
     try {
-        await pool.query(
-            'UPDATE showtimes SET date=$1, time=$2, room=$3, price=$4 WHERE id=$5',
+        await pool.query('UPDATE showtimes SET date=$1, time=$2, room=$3, price=$4 WHERE id=$5',
             [date, time, room, price, req.params.id]
         );
         res.json({ message: 'Showtime updated successfully' });
@@ -354,7 +412,35 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
         );
 
         await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [seats.length, showtime_id]);
-        res.json({ id: result.rows[0].id, message: 'Booking created successfully' });
+
+        const bookingId = result.rows[0].id;
+        const bookingDetails = await pool.query(`
+            SELECT u.name, u.email, m.title, s.date, s.time, s.room
+            FROM bookings b JOIN users u ON b.user_id = u.id
+            JOIN showtimes s ON b.showtime_id = s.id JOIN movies m ON s.movie_id = m.id WHERE b.id = $1
+        `, [bookingId]);
+
+        if (bookingDetails.rows.length > 0) {
+            const details = bookingDetails.rows[0];
+            const confirmationHTML = `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <h1 style="color: #000;">Réservation confirmée ! 🎟️</h1>
+                    <p>Bonjour <strong>${details.name}</strong>,</p>
+                    <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
+                        <p><strong>Film:</strong> ${details.title}</p>
+                        <p><strong>Date:</strong> ${new Date(details.date).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Heure:</strong> ${details.time}</p>
+                        <p><strong>Salle:</strong> ${details.room}</p>
+                        <p><strong>Places:</strong> ${seats.join(', ')}</p>
+                        <p><strong>Total:</strong> ${total_price} FCFA</p>
+                    </div>
+                    <p>Annulation gratuite jusqu'à 25 min avant.</p>
+                </div>
+            `;
+            await sendEmail(details.email, `Confirmation - ${details.title}`, confirmationHTML);
+        }
+
+        res.json({ id: bookingId, message: 'Booking created successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to create booking' });
     }
@@ -364,11 +450,8 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT b.*, m.title as movie_title, s.date, s.time, s.room 
-            FROM bookings b 
-            JOIN showtimes s ON b.showtime_id = s.id 
-            JOIN movies m ON s.movie_id = m.id 
-            WHERE b.user_id = $1 
-            ORDER BY b.booking_time DESC
+            FROM bookings b JOIN showtimes s ON b.showtime_id = s.id 
+            JOIN movies m ON s.movie_id = m.id WHERE b.user_id = $1 ORDER BY b.booking_time DESC
         `, [req.user.id]);
         res.json(result.rows);
     } catch (error) {
@@ -379,8 +462,7 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
 app.put('/api/bookings/:id/cancel', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT b.*, s.date, s.time FROM bookings b 
-            JOIN showtimes s ON b.showtime_id = s.id 
+            SELECT b.*, s.date, s.time FROM bookings b JOIN showtimes s ON b.showtime_id = s.id 
             WHERE b.id = $1 AND b.user_id = $2
         `, [req.params.id, req.user.id]);
 
@@ -449,11 +531,8 @@ app.get('/api/admin/bookings', authenticateToken, isAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT b.*, u.name as user_name, u.email, m.title as movie_title, s.date, s.time, s.room 
-            FROM bookings b 
-            JOIN users u ON b.user_id = u.id 
-            JOIN showtimes s ON b.showtime_id = s.id 
-            JOIN movies m ON s.movie_id = m.id 
-            ORDER BY b.booking_time DESC
+            FROM bookings b JOIN users u ON b.user_id = u.id JOIN showtimes s ON b.showtime_id = s.id 
+            JOIN movies m ON s.movie_id = m.id ORDER BY b.booking_time DESC
         `);
         res.json(result.rows);
     } catch (error) {
@@ -488,14 +567,13 @@ app.listen(PORT, () => {
 ║                                                       ║
 ║     Server running on http://localhost:${PORT}        ║
 ║                                                       ║
-║     📍 Site public: http://localhost:${PORT}/index.html      ║
-║     👨‍💼 Admin panel: http://localhost:${PORT}/admin.html     ║
+║     📍 Site: http://localhost:${PORT}/index.html      ║
+║     👨‍💼 Admin: http://localhost:${PORT}/admin.html     ║
 ║                                                       ║
 ║     🗄️  Database: PostgreSQL (Supabase)              ║
+║     📱 SMS: Africa's Talking                          ║
 ║                                                       ║
-║     🔐 Admin login:                                   ║
-║        Email: admin@sylver-screen.com                 ║
-║        Password: admin123                             ║
+║     🔐 Admin: admin@sylver-screen.com / admin123     ║
 ║                                                       ║
 ╚═══════════════════════════════════════════════════════╝
     `);
