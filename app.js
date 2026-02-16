@@ -173,9 +173,19 @@ function moveToNext(current, nextId) {
 // ========== MOVIES FUNCTIONS ==========
 
 async function loadMovies() {
+    console.log('🎬 Loading movies...');
+    console.log('API_URL:', API_URL);
     try {
         const response = await fetch(`${API_URL}/movies`);
+        console.log('Response status:', response.status);
+        console.log('Response ok:', response.ok);
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         movies = await response.json();
+        console.log('Movies loaded:', movies.length);
         displayMovies(movies);
     } catch (error) {
         console.error('Load movies error:', error);
@@ -184,13 +194,21 @@ async function loadMovies() {
 }
 
 function displayMovies(moviesData) {
+    console.log('📺 Displaying movies:', moviesData);
     const grid = document.getElementById('moviesGrid');
 
+    if (!grid) {
+        console.error('❌ moviesGrid element not found!');
+        return;
+    }
+
     if (moviesData.length === 0) {
+        console.log('⚠️ No movies to display');
         grid.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Aucun film à l\'affiche pour le moment</p>';
         return;
     }
 
+    console.log(`✅ Rendering ${moviesData.length} movies`);
     grid.innerHTML = moviesData.map(movie => `
         <div class="movie-card" onclick="showMovieDetails(${movie.id})">
             <div class="movie-poster">
@@ -210,6 +228,7 @@ function displayMovies(moviesData) {
             </div>
         </div>
     `).join('');
+    console.log('✅ Movies rendered successfully');
 }
 
 async function showMovieDetails(movieId) {
