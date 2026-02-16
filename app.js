@@ -1,5 +1,7 @@
 // app.js - Frontend JavaScript with API integration
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.hostname === 'localhost'
+    ? 'http://localhost:3000/api'
+    : '/api';
 let currentUser = null;
 let authToken = null;
 let selectedSeats = [];
