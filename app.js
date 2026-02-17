@@ -1,7 +1,5 @@
-// app.js - Frontend JavaScript
-const API_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3000/api'
-    : '/api';
+// app.js
+const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
 
 let currentUser = null;
 let authToken = null;
@@ -10,18 +8,79 @@ let currentMovie = null;
 let movies = [];
 let showtimes = [];
 
-// Initialize
+// ========== TOAST & DIALOG ==========
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `
+        <span class="toast-icon">${icons[type] || 'ℹ️'}</span>
+        <span class="toast-msg">${message}</span>
+        <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+    `;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+
+function showDialog({ icon = 'ℹ️', title, message, buttons = [] }) {
+    document.getElementById('dialogIcon').textContent = icon;
+    document.getElementById('dialogTitle').textContent = title;
+    document.getElementById('dialogMessage').textContent = message;
+
+    const btnsContainer = document.getElementById('dialogButtons');
+    btnsContainer.innerHTML = '';
+
+    if (buttons.length === 0) {
+        buttons = [{ label: 'OK', style: 'btn-white', action: closeDialog }];
+    }
+
+    buttons.forEach(btn => {
+        const el = document.createElement('button');
+        el.className = btn.style || 'btn-white';
+        el.textContent = btn.label;
+        el.style.minWidth = '120px';
+        el.style.padding = '0.75rem 1.5rem';
+        el.onclick = () => {
+            closeDialog();
+            if (btn.action) btn.action();
+        };
+        btnsContainer.appendChild(el);
+    });
+
+    document.getElementById('dialogOverlay').classList.add('active');
+}
+
+function closeDialog() {
+    document.getElementById('dialogOverlay').classList.remove('active');
+}
+
+// ========== MOBILE MENU ==========
+
+function toggleMobileMenu() {
+    document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+function closeMobileMenu() {
+    document.getElementById('mobileMenu').classList.remove('open');
+}
+
+// ========== AUTH ==========
+
 document.addEventListener('DOMContentLoaded', function () {
     checkAuth();
     loadMovies();
 });
 
-// ========== AUTH FUNCTIONS ==========
-
 function checkAuth() {
     const token = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
-
     if (token && user) {
         authToken = token;
         currentUser = JSON.parse(user);
@@ -32,44 +91,42 @@ function checkAuth() {
 function updateNavigation() {
     const loginBtn = document.getElementById('loginBtn');
     const registerBtn = document.getElementById('registerBtn');
+    const mobileLoginBtn = document.getElementById('mobileLoginBtn');
+    const mobileRegisterBtn = document.getElementById('mobileRegisterBtn');
 
     if (currentUser) {
-        // Utilisateur connecté
-        if (currentUser.is_admin) {
-            loginBtn.textContent = '👨‍💼 ADMIN';
-            loginBtn.onclick = () => window.location.href = 'admin.html';
-        } else {
-            loginBtn.textContent = '👤 ' + currentUser.name.toUpperCase();
-            loginBtn.onclick = () => alert('Mon compte (à développer)');
-        }
+        const label = currentUser.is_admin ? '👨‍💼 ADMIN' : '👤 ' + currentUser.name.split(' ')[0].toUpperCase();
+        const action = currentUser.is_admin
+            ? () => window.location.href = 'admin.html'
+            : () => showToast('Fonctionnalité "Mon compte" bientôt disponible', 'info');
 
-        // Cacher le bouton "Créer un compte"
-        if (registerBtn) {
-            registerBtn.style.display = 'none';
-        }
+        loginBtn.textContent = label;
+        loginBtn.onclick = action;
+        if (mobileLoginBtn) { mobileLoginBtn.textContent = label; mobileLoginBtn.onclick = action; }
 
-        // Ajouter un bouton de déconnexion
+        if (registerBtn) registerBtn.style.display = 'none';
+        if (mobileRegisterBtn) mobileRegisterBtn.style.display = 'none';
+
+        // Bouton déconnexion
         if (!document.getElementById('logoutBtn')) {
-            const logoutBtn = document.createElement('button');
-            logoutBtn.id = 'logoutBtn';
-            logoutBtn.className = 'btn-black';
-            logoutBtn.textContent = 'Déconnexion';
-            logoutBtn.onclick = logout;
-            document.getElementById('navLinks').appendChild(logoutBtn);
+            const btn = document.createElement('button');
+            btn.id = 'logoutBtn';
+            btn.className = 'btn-black';
+            btn.textContent = 'Déconnexion';
+            btn.style.fontSize = '0.8rem';
+            btn.onclick = logout;
+            document.getElementById('navLinks').appendChild(btn);
         }
     } else {
-        // Utilisateur non connecté
         loginBtn.textContent = 'Connexion';
         loginBtn.onclick = openLoginModal;
+        if (mobileLoginBtn) { mobileLoginBtn.textContent = 'Connexion'; mobileLoginBtn.onclick = () => { closeMobileMenu(); openLoginModal(); }; }
 
-        if (registerBtn) {
-            registerBtn.style.display = 'inline-block';
-        }
+        if (registerBtn) registerBtn.style.display = '';
+        if (mobileRegisterBtn) mobileRegisterBtn.style.display = '';
 
         const logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) {
-            logoutBtn.remove();
-        }
+        if (logoutBtn) logoutBtn.remove();
     }
 }
 
@@ -79,12 +136,15 @@ function logout() {
     authToken = null;
     currentUser = null;
     updateNavigation();
-    alert('Déconnexion réussie');
-    location.reload();
+    showToast('Déconnexion réussie', 'success');
 }
 
 async function login(event) {
     event.preventDefault();
+    const btn = event.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Connexion...';
+
     const email = document.getElementById('loginEmail').value;
     const password = document.getElementById('loginPassword').value;
 
@@ -102,28 +162,37 @@ async function login(event) {
             currentUser = data.user;
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
-
             closeModal('loginModal');
             updateNavigation();
+            showToast(`Bienvenue ${currentUser.name} ! 🎬`, 'success');
 
             if (currentUser.is_admin) {
-                if (confirm('Accéder au panel admin ?')) {
-                    window.location.href = 'admin.html';
-                }
-            } else {
-                alert('Connexion réussie !');
+                showDialog({
+                    icon: '👨‍💼',
+                    title: 'Accès Admin',
+                    message: 'Vous êtes connecté en tant qu\'administrateur.',
+                    buttons: [
+                        { label: 'Panel Admin', style: 'btn-white', action: () => window.location.href = 'admin.html' },
+                        { label: 'Rester ici', style: 'btn-black', action: () => { } }
+                    ]
+                });
             }
         } else {
-            alert(data.error || 'Connexion échouée');
+            showToast(data.error || 'Email ou mot de passe incorrect', 'error');
         }
     } catch (error) {
-        console.error('Login error:', error);
-        alert('Erreur de connexion');
+        showToast('Erreur de connexion. Vérifiez votre connexion internet.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Se connecter';
     }
 }
 
 async function registerStep1(event) {
     event.preventDefault();
+    const btn = event.target.querySelector('button[type=submit]');
+    btn.disabled = true;
+    btn.textContent = 'Création en cours...';
 
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
@@ -141,6 +210,7 @@ async function registerStep1(event) {
         const data = await response.json();
 
         if (response.ok) {
+            // Connecter directement l'utilisateur
             authToken = data.token;
             currentUser = data.user;
             localStorage.setItem('authToken', authToken);
@@ -148,55 +218,79 @@ async function registerStep1(event) {
 
             closeModal('registerModal');
             updateNavigation();
-            alert('Compte créé avec succès !');
+
+            showDialog({
+                icon: '🎬',
+                title: 'Bienvenue !',
+                message: `Votre compte a été créé avec succès. Bonne séance chez Sylver Screen, ${name} !`,
+                buttons: [
+                    { label: 'Voir les films', style: 'btn-white', action: () => document.getElementById('movies').scrollIntoView({ behavior: 'smooth' }) },
+                    { label: 'Fermer', style: 'btn-black', action: () => { } }
+                ]
+            });
         } else {
-            alert(data.error || 'Inscription échouée');
+            // Si compte existe, proposer de se connecter
+            if (data.error && data.error.includes('existe')) {
+                showDialog({
+                    icon: '⚠️',
+                    title: 'Compte existant',
+                    message: 'Un compte avec cet email existe déjà. Souhaitez-vous vous connecter ?',
+                    buttons: [
+                        { label: 'Se connecter', style: 'btn-white', action: () => openLoginModal() },
+                        { label: 'Annuler', style: 'btn-black', action: () => { } }
+                    ]
+                });
+            } else {
+                showToast(data.error || 'Erreur lors de l\'inscription', 'error');
+            }
         }
     } catch (error) {
-        console.error('Registration error:', error);
-        alert('Erreur d\'inscription');
+        showToast('Erreur de connexion. Vérifiez votre connexion internet.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Créer mon compte';
     }
 }
 
-function moveToNext(current, nextId) {
-    if (current.value.length === 1) {
-        const next = document.getElementById(nextId);
-        if (next) next.focus();
-    }
-}
-
-// ========== MOVIES FUNCTIONS ==========
+// ========== MOVIES ==========
 
 async function loadMovies() {
+    const grid = document.getElementById('moviesGrid');
+    grid.innerHTML = '<div style="grid-column:1/-1"><div class="spinner"></div></div>';
+
     try {
         const response = await fetch(`${API_URL}/movies`);
+        if (!response.ok) throw new Error('Erreur serveur');
         movies = await response.json();
         displayMovies(movies);
     } catch (error) {
-        console.error('Load movies error:', error);
-        document.getElementById('moviesGrid').innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Erreur de chargement des films</p>';
+        grid.innerHTML = `
+            <div style="grid-column:1/-1; text-align:center; padding:4rem;">
+                <p style="color:var(--text-gray); margin-bottom:1.5rem;">Impossible de charger les films</p>
+                <button class="btn-white" onclick="loadMovies()">Réessayer</button>
+            </div>`;
     }
 }
 
 function displayMovies(moviesData) {
     const grid = document.getElementById('moviesGrid');
 
-    if (moviesData.length === 0) {
-        grid.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Aucun film à l\'affiche</p>';
+    if (!moviesData || moviesData.length === 0) {
+        grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:4rem;"><p style="color:var(--text-gray);">Aucun film à l\'affiche pour le moment</p></div>';
         return;
     }
 
     grid.innerHTML = moviesData.map(movie => `
         <div class="movie-card" onclick="showMovieDetails(${movie.id})">
             <div class="movie-poster">
-                ${movie.poster_url ? `<img src="${movie.poster_url}" alt="${movie.title}">` : '🎬'}
+                ${movie.poster_url ? `<img src="${movie.poster_url}" alt="${movie.title}" loading="lazy">` : '🎬'}
             </div>
             <div class="movie-info">
                 <div class="movie-title">${movie.title}</div>
                 <div class="movie-genre">${movie.genre}</div>
                 <div class="movie-rating">
-                    <span class="stars">${'★'.repeat(Math.floor(movie.rating))}${'☆'.repeat(5 - Math.floor(movie.rating))}</span>
-                    <span class="rating-text">(${movie.rating.toFixed(1)} - ${movie.votes_count} votes)</span>
+                    <span>${'★'.repeat(Math.floor(movie.rating || 0))}${'☆'.repeat(5 - Math.floor(movie.rating || 0))}</span>
+                    <span class="rating-text">${(movie.rating || 0).toFixed(1)} (${movie.votes_count || 0})</span>
                 </div>
                 <div class="movie-actions">
                     <button class="btn-book" onclick="event.stopPropagation(); quickBook(${movie.id})">Réserver</button>
@@ -209,18 +303,21 @@ function displayMovies(moviesData) {
 
 async function showMovieDetails(movieId) {
     currentMovie = movies.find(m => m.id === movieId);
-
     document.getElementById('movieTitle').textContent = currentMovie.title;
     document.getElementById('movieDetails').innerHTML = `
-        <div style="text-align: center; margin-bottom: 2rem;">
-            ${currentMovie.poster_url ? `<img src="${currentMovie.poster_url}" alt="${currentMovie.title}" style="max-width: 100%; max-height: 400px;">` : '<div style="font-size: 6rem;">🎬</div>'}
+        <div style="text-align:center; margin-bottom:1.5rem;">
+            ${currentMovie.poster_url
+            ? `<img src="${currentMovie.poster_url}" alt="${currentMovie.title}" style="max-width:100%; max-height:350px; object-fit:cover;">`
+            : '<div style="font-size:5rem;">🎬</div>'}
         </div>
-        <p><strong>Genre:</strong> ${currentMovie.genre}</p>
-        <p><strong>Durée:</strong> ${currentMovie.duration} minutes</p>
-        <p><strong>Note moyenne:</strong> ${currentMovie.rating.toFixed(1)}/5 (${currentMovie.votes_count} votes)</p>
-        <p style="margin-top: 1.5rem; line-height: 1.8;">${currentMovie.description || 'Aucune description disponible.'}</p>
+        <p style="margin-bottom:0.5rem;"><strong>Genre :</strong> ${currentMovie.genre}</p>
+        <p style="margin-bottom:0.5rem;"><strong>Durée :</strong> ${currentMovie.duration} min</p>
+        <p style="margin-bottom:1.25rem;"><strong>Note :</strong> ${(currentMovie.rating || 0).toFixed(1)}/5 (${currentMovie.votes_count || 0} votes)</p>
+        <p style="color:var(--text-gray); line-height:1.7; font-size:0.9rem;">${currentMovie.description || ''}</p>
     `;
 
+    // Reset stars
+    document.querySelectorAll('#userRating .star').forEach(s => s.classList.remove('active'));
     openModal('movieModal');
 }
 
@@ -231,43 +328,52 @@ function quickBook(movieId) {
 
 async function rateMovie(rating) {
     if (!currentUser) {
-        alert('Veuillez vous connecter pour noter un film');
-        openLoginModal();
+        showDialog({
+            icon: '🔐',
+            title: 'Connexion requise',
+            message: 'Vous devez être connecté pour noter un film.',
+            buttons: [
+                { label: 'Se connecter', style: 'btn-white', action: openLoginModal },
+                { label: 'Annuler', style: 'btn-black' }
+            ]
+        });
         return;
     }
 
     try {
         const response = await fetch(`${API_URL}/ratings`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
             body: JSON.stringify({ movie_id: currentMovie.id, rating })
         });
 
         if (response.ok) {
-            const stars = document.querySelectorAll('#userRating .star');
-            stars.forEach((star, index) => {
-                star.classList.toggle('active', index < rating);
+            document.querySelectorAll('#userRating .star').forEach((star, i) => {
+                star.classList.toggle('active', i < rating);
             });
-            alert(`Merci d'avoir noté "${currentMovie.title}" avec ${rating} étoiles !`);
+            showToast(`Vous avez noté "${currentMovie.title}" : ${rating}/5 ⭐`, 'success');
             loadMovies();
         } else {
-            alert('Erreur lors de la notation');
+            showToast('Erreur lors de la notation', 'error');
         }
     } catch (error) {
-        console.error('Rating error:', error);
-        alert('Erreur lors de la notation');
+        showToast('Erreur de connexion', 'error');
     }
 }
 
-// ========== BOOKING FUNCTIONS ==========
+// ========== BOOKING ==========
 
 async function openBookingModal() {
     if (!currentUser) {
-        alert('Veuillez vous connecter pour réserver');
-        openLoginModal();
+        showDialog({
+            icon: '🔐',
+            title: 'Connexion requise',
+            message: 'Vous devez être connecté pour réserver des places.',
+            buttons: [
+                { label: 'Se connecter', style: 'btn-white', action: openLoginModal },
+                { label: 'Créer un compte', style: 'btn-black', action: openRegisterModal }
+            ]
+        });
         return;
     }
 
@@ -282,25 +388,24 @@ async function openBookingModal() {
 
 async function updateShowtimes() {
     const movieId = parseInt(document.getElementById('bookingMovie').value);
-
     try {
         const response = await fetch(`${API_URL}/movies/${movieId}/showtimes`);
         showtimes = await response.json();
-
         const select = document.getElementById('bookingShowtime');
 
         if (showtimes.length === 0) {
             select.innerHTML = '<option>Aucune séance disponible</option>';
+            document.getElementById('seatsGrid').innerHTML = '';
             return;
         }
 
         select.innerHTML = showtimes.map(st =>
-            `<option value="${st.id}">${st.date} à ${st.time} - ${st.room} (${st.available_seats} places)</option>`
+            `<option value="${st.id}">${st.date} à ${st.time} — ${st.room} (${st.available_seats} places)</option>`
         ).join('');
 
         loadSeats();
     } catch (error) {
-        console.error('Load showtimes error:', error);
+        showToast('Erreur lors du chargement des séances', 'error');
     }
 }
 
@@ -310,60 +415,49 @@ function loadSeats() {
 
     const showtimeId = parseInt(document.getElementById('bookingShowtime').value);
     const showtime = showtimes.find(s => s.id === showtimeId);
-
     if (!showtime) return;
 
-    const totalSeats = showtime.total_seats;
-    const occupiedCount = totalSeats - showtime.available_seats;
-    const occupiedSeats = [];
+    const TOTAL = 60; // 6 rangées x 10
+    const occupiedCount = Math.max(0, TOTAL - showtime.available_seats);
+    const occupiedSeats = new Set();
 
-    for (let i = 0; i < occupiedCount; i++) {
-        let seat;
-        do {
-            seat = Math.floor(Math.random() * totalSeats) + 1;
-        } while (occupiedSeats.includes(seat));
-        occupiedSeats.push(seat);
+    while (occupiedSeats.size < occupiedCount) {
+        occupiedSeats.add(Math.floor(Math.random() * TOTAL) + 1);
     }
 
-    let seatsHTML = '';
-    for (let i = 1; i <= totalSeats; i++) {
-        const isOccupied = occupiedSeats.includes(i);
-        seatsHTML += `
-            <div class="seat ${isOccupied ? 'occupied' : ''}" 
-                 onclick="${!isOccupied ? `toggleSeat(${i})` : ''}"
-                 data-seat="${i}">
-                ${i}
-            </div>
-        `;
+    let html = '';
+    for (let i = 1; i <= TOTAL; i++) {
+        const occupied = occupiedSeats.has(i);
+        html += `<div class="seat ${occupied ? 'occupied' : ''}" 
+                      ${!occupied ? `onclick="toggleSeat(${i})"` : ''}
+                      data-seat="${i}">${i}</div>`;
     }
 
-    grid.innerHTML = seatsHTML;
+    grid.innerHTML = html;
     updateBookingSummary();
 }
 
-function toggleSeat(seatNumber) {
-    const seat = document.querySelector(`[data-seat="${seatNumber}"]`);
-    const index = selectedSeats.indexOf(seatNumber);
-
-    if (index > -1) {
-        selectedSeats.splice(index, 1);
+function toggleSeat(n) {
+    const seat = document.querySelector(`[data-seat="${n}"]`);
+    const idx = selectedSeats.indexOf(n);
+    if (idx > -1) {
+        selectedSeats.splice(idx, 1);
         seat.classList.remove('selected');
     } else {
-        selectedSeats.push(seatNumber);
+        selectedSeats.push(n);
         seat.classList.add('selected');
     }
-
     updateBookingSummary();
 }
 
 function updateBookingSummary() {
     document.getElementById('selectedSeatsCount').textContent = selectedSeats.length;
-    document.getElementById('totalPrice').textContent = (selectedSeats.length * 3000) + ' FCFA';
+    document.getElementById('totalPrice').textContent = (selectedSeats.length * 3000).toLocaleString('fr-FR') + ' FCFA';
 }
 
 async function confirmBooking() {
     if (selectedSeats.length === 0) {
-        alert('Veuillez sélectionner au moins une place');
+        showToast('Veuillez sélectionner au moins une place', 'error');
         return;
     }
 
@@ -373,29 +467,26 @@ async function confirmBooking() {
     try {
         const response = await fetch(`${API_URL}/bookings`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${authToken}`
-            },
-            body: JSON.stringify({
-                showtime_id: showtimeId,
-                seats: selectedSeats,
-                total_price: totalPrice
-            })
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ showtime_id: showtimeId, seats: selectedSeats, total_price: totalPrice })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            alert(`Réservation confirmée !\n\nPlaces: ${selectedSeats.join(', ')}\nTotal: ${totalPrice} FCFA\n\nUn email de confirmation a été envoyé.`);
             closeModal('bookingModal');
             selectedSeats = [];
+            showDialog({
+                icon: '🎉',
+                title: 'Réservation confirmée !',
+                message: `Places : ${data.seats || selectedSeats.join(', ')}\nTotal : ${totalPrice.toLocaleString('fr-FR')} FCFA\n\nUn email de confirmation vous a été envoyé.`,
+                buttons: [{ label: 'Parfait !', style: 'btn-white' }]
+            });
         } else {
-            alert(data.error || 'Erreur lors de la réservation');
+            showToast(data.error || 'Erreur lors de la réservation', 'error');
         }
     } catch (error) {
-        console.error('Booking error:', error);
-        alert('Erreur lors de la réservation');
+        showToast('Erreur de connexion', 'error');
     }
 }
 
@@ -403,11 +494,7 @@ async function confirmBooking() {
 
 async function subscribeNewsletter() {
     const email = document.getElementById('newsletterEmail').value;
-
-    if (!email) {
-        alert('Veuillez entrer votre email');
-        return;
-    }
+    if (!email) { showToast('Veuillez entrer votre email', 'error'); return; }
 
     try {
         const response = await fetch(`${API_URL}/newsletter/subscribe`, {
@@ -417,51 +504,39 @@ async function subscribeNewsletter() {
         });
 
         if (response.ok) {
-            alert('Merci ! Vous recevrez nos actualités.');
             document.getElementById('newsletterEmail').value = '';
+            showToast('Merci ! Vous recevrez nos actualités chaque semaine. 🎬', 'success');
         } else {
-            alert('Erreur d\'inscription');
+            showToast('Erreur d\'inscription à la newsletter', 'error');
         }
     } catch (error) {
-        console.error('Newsletter error:', error);
-        alert('Erreur d\'inscription');
+        showToast('Erreur de connexion', 'error');
     }
 }
 
-// ========== MODAL FUNCTIONS ==========
+// ========== MODALS ==========
 
-function openModal(modalId) {
+function openModal(id) {
     closeAllModals();
-    document.getElementById(modalId).classList.add('active');
+    document.getElementById(id).classList.add('active');
     document.body.style.overflow = 'hidden';
 }
 
-function closeModal(modalId) {
-    document.getElementById(modalId).classList.remove('active');
-    document.body.style.overflow = 'auto';
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+    document.body.style.overflow = '';
 }
 
 function closeAllModals() {
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.classList.remove('active');
-    });
-    document.body.style.overflow = 'auto';
+    document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
+    document.body.style.overflow = '';
 }
 
-function openLoginModal() {
-    closeAllModals();
-    openModal('loginModal');
-}
-
-function openRegisterModal() {
-    closeAllModals();
-    openModal('registerModal');
-}
+function openLoginModal() { closeAllModals(); openModal('loginModal'); }
+function openRegisterModal() { closeAllModals(); openModal('registerModal'); }
 
 document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', function (e) {
-        if (e.target === modal) {
-            closeModal(modal.id);
-        }
+    modal.addEventListener('click', e => {
+        if (e.target === modal) closeModal(modal.id);
     });
 });
