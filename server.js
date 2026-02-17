@@ -4,6 +4,7 @@ const express = require('express');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
