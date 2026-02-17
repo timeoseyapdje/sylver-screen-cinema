@@ -1,7 +1,8 @@
-// app.js - Frontend JavaScript with API integration
+// app.js - Frontend JavaScript
 const API_URL = window.location.hostname === 'localhost'
     ? 'http://localhost:3000/api'
     : '/api';
+
 let currentUser = null;
 let authToken = null;
 let selectedSeats = [];
@@ -25,11 +26,6 @@ function checkAuth() {
         authToken = token;
         currentUser = JSON.parse(user);
         updateNavigation();
-
-        // Redirect to admin if admin user
-        if (currentUser.is_admin && window.location.pathname === '/index.html') {
-            // Don't auto-redirect, let user choose
-        }
     }
 }
 
@@ -44,7 +40,7 @@ function updateNavigation() {
             loginBtn.onclick = () => window.location.href = 'admin.html';
         } else {
             loginBtn.textContent = '👤 ' + currentUser.name.toUpperCase();
-            loginBtn.onclick = () => alert('Mon compte (fonctionnalité à venir)');
+            loginBtn.onclick = () => alert('Mon compte (à développer)');
         }
 
         // Cacher le bouton "Créer un compte"
@@ -63,14 +59,13 @@ function updateNavigation() {
         }
     } else {
         // Utilisateur non connecté
-        loginBtn.textContent = 'CONNEXION';
+        loginBtn.textContent = 'Connexion';
         loginBtn.onclick = openLoginModal;
 
         if (registerBtn) {
             registerBtn.style.display = 'inline-block';
         }
 
-        // Supprimer le bouton de déconnexion si présent
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
             logoutBtn.remove();
@@ -84,8 +79,8 @@ function logout() {
     authToken = null;
     currentUser = null;
     updateNavigation();
-    alert('Déconnexion réussie !');
-    window.location.reload();
+    alert('Déconnexion réussie');
+    location.reload();
 }
 
 async function login(event) {
@@ -112,7 +107,7 @@ async function login(event) {
             updateNavigation();
 
             if (currentUser.is_admin) {
-                if (confirm('Vous êtes connecté en tant qu\'administrateur. Accéder au panel admin ?')) {
+                if (confirm('Accéder au panel admin ?')) {
                     window.location.href = 'admin.html';
                 }
             } else {
@@ -153,7 +148,7 @@ async function registerStep1(event) {
 
             closeModal('registerModal');
             updateNavigation();
-            alert('Compte créé avec succès ! Bienvenue chez Sylver Screen !');
+            alert('Compte créé avec succès !');
         } else {
             alert(data.error || 'Inscription échouée');
         }
@@ -173,42 +168,24 @@ function moveToNext(current, nextId) {
 // ========== MOVIES FUNCTIONS ==========
 
 async function loadMovies() {
-    console.log('🎬 Loading movies...');
-    console.log('API_URL:', API_URL);
     try {
         const response = await fetch(`${API_URL}/movies`);
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
         movies = await response.json();
-        console.log('Movies loaded:', movies.length);
         displayMovies(movies);
     } catch (error) {
         console.error('Load movies error:', error);
-        document.getElementById('moviesGrid').innerHTML = '<p style="text-align: center; color: var(--text-gray);">Erreur de chargement des films</p>';
+        document.getElementById('moviesGrid').innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Erreur de chargement des films</p>';
     }
 }
 
 function displayMovies(moviesData) {
-    console.log('📺 Displaying movies:', moviesData);
     const grid = document.getElementById('moviesGrid');
 
-    if (!grid) {
-        console.error('❌ moviesGrid element not found!');
-        return;
-    }
-
     if (moviesData.length === 0) {
-        console.log('⚠️ No movies to display');
-        grid.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Aucun film à l\'affiche pour le moment</p>';
+        grid.innerHTML = '<p style="text-align: center; color: var(--text-gray); grid-column: 1/-1;">Aucun film à l\'affiche</p>';
         return;
     }
 
-    console.log(`✅ Rendering ${moviesData.length} movies`);
     grid.innerHTML = moviesData.map(movie => `
         <div class="movie-card" onclick="showMovieDetails(${movie.id})">
             <div class="movie-poster">
@@ -228,7 +205,6 @@ function displayMovies(moviesData) {
             </div>
         </div>
     `).join('');
-    console.log('✅ Movies rendered successfully');
 }
 
 async function showMovieDetails(movieId) {
@@ -276,7 +252,7 @@ async function rateMovie(rating) {
                 star.classList.toggle('active', index < rating);
             });
             alert(`Merci d'avoir noté "${currentMovie.title}" avec ${rating} étoiles !`);
-            loadMovies(); // Reload to update ratings
+            loadMovies();
         } else {
             alert('Erreur lors de la notation');
         }
@@ -341,7 +317,6 @@ function loadSeats() {
     const occupiedCount = totalSeats - showtime.available_seats;
     const occupiedSeats = [];
 
-    // Generate random occupied seats for demo
     for (let i = 0; i < occupiedCount; i++) {
         let seat;
         do {
@@ -442,7 +417,7 @@ async function subscribeNewsletter() {
         });
 
         if (response.ok) {
-            alert('Merci ! Vous recevrez nos actualités chaque semaine.');
+            alert('Merci ! Vous recevrez nos actualités.');
             document.getElementById('newsletterEmail').value = '';
         } else {
             alert('Erreur d\'inscription');
@@ -483,7 +458,6 @@ function openRegisterModal() {
     openModal('registerModal');
 }
 
-// Close modal on outside click
 document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', function (e) {
         if (e.target === modal) {
