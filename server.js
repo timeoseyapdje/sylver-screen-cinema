@@ -1,10 +1,9 @@
-// server.js - Backend avec PostgreSQL (Supabase)
+// server.js - Backend Sylver Screen Cinema
 require('dotenv').config();
 const express = require('express');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const nodemailer = require('nodemailer');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -558,8 +557,53 @@ app.get('/api/admin/stats', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
+// ========== PRICE SETTINGS ==========
+
+// Create settings table in initDatabase (called on startup)
+async function ensureSettingsTable() {
+    await pool.query(`CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )`);
+    // Insert default prices if not set
+    await pool.query(`INSERT INTO settings (key, value) VALUES ('price_adulte', '3000') ON CONFLICT (key) DO NOTHING`);
+    await pool.query(`INSERT INTO settings (key, value) VALUES ('price_enfant', '2000') ON CONFLICT (key) DO NOTHING`);
+    await pool.query(`INSERT INTO settings (key, value) VALUES ('price_popcorn', '4000') ON CONFLICT (key) DO NOTHING`);
+}
+
+// Get prices (public)
+app.get('/api/settings/prices', async (req, res) => {
+    try {
+        const result = await pool.query("SELECT key, value FROM settings WHERE key LIKE 'price_%'");
+        const prices = {};
+        result.rows.forEach(row => {
+            const type = row.key.replace('price_', '');
+            prices[type] = parseInt(row.value);
+        });
+        res.json(prices);
+    } catch (error) {
+        res.json({ adulte: 3000, enfant: 2000, popcorn: 4000 });
+    }
+});
+
+// Update prices (admin only)
+app.put('/api/admin/prices', authenticateToken, isAdmin, async (req, res) => {
+    const { adulte, enfant, popcorn } = req.body;
+    try {
+        if (adulte) await pool.query(`UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'price_adulte'`, [adulte]);
+        if (enfant) await pool.query(`UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'price_enfant'`, [enfant]);
+        if (popcorn) await pool.query(`UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'price_popcorn'`, [popcorn]);
+        console.log(`✅ Prices updated: Adulte=${adulte}, Enfant=${enfant}, Popcorn=${popcorn}`);
+        res.json({ success: true, prices: { adulte, enfant, popcorn } });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update prices' });
+    }
+});
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+    await ensureSettingsTable();
     console.log(`
 ╔═══════════════════════════════════════════════════════╗
 ║                                                       ║

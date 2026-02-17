@@ -7,6 +7,8 @@ let selectedSeats = [];
 let currentMovie = null;
 let movies = [];
 let showtimes = [];
+let selectedTicketType = 'adulte';
+let ticketPrices = { adulte: 3000, enfant: 2000, popcorn: 4000 };
 
 // ========== TOAST & DIALOG ==========
 
@@ -30,6 +32,9 @@ function showToast(message, type = 'info') {
 }
 
 function showDialog({ icon = 'ℹ️', title, message, buttons = [] }) {
+    const overlay = document.getElementById('dialogOverlay');
+    if (!overlay) return;
+
     document.getElementById('dialogIcon').textContent = icon;
     document.getElementById('dialogTitle').textContent = title;
     document.getElementById('dialogMessage').textContent = message;
@@ -54,11 +59,16 @@ function showDialog({ icon = 'ℹ️', title, message, buttons = [] }) {
         btnsContainer.appendChild(el);
     });
 
-    document.getElementById('dialogOverlay').classList.add('active');
+    overlay.style.display = 'flex';
+    overlay.classList.add('active');
 }
 
 function closeDialog() {
-    document.getElementById('dialogOverlay').classList.remove('active');
+    const overlay = document.getElementById('dialogOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+        overlay.classList.remove('active');
+    }
 }
 
 // ========== MOBILE MENU ==========
@@ -76,6 +86,7 @@ function closeMobileMenu() {
 document.addEventListener('DOMContentLoaded', function () {
     checkAuth();
     loadMovies();
+    loadTicketPrices();
 });
 
 function checkAuth() {
@@ -95,14 +106,14 @@ function updateNavigation() {
     const mobileRegisterBtn = document.getElementById('mobileRegisterBtn');
 
     if (currentUser) {
-        const label = currentUser.is_admin ? '👨‍💼 ADMIN' : '👤 ' + currentUser.name.split(' ')[0].toUpperCase();
+        const label = currentUser.is_admin ? '👨‍💼 ADMIN' : '👤 MON COMPTE';
         const action = currentUser.is_admin
             ? () => window.location.href = 'admin.html'
-            : () => showToast('Fonctionnalité "Mon compte" bientôt disponible', 'info');
+            : openAccountModal;
 
         loginBtn.textContent = label;
         loginBtn.onclick = action;
-        if (mobileLoginBtn) { mobileLoginBtn.textContent = label; mobileLoginBtn.onclick = action; }
+        if (mobileLoginBtn) { mobileLoginBtn.textContent = label; mobileLoginBtn.onclick = () => { closeMobileMenu(); action(); }; }
 
         if (registerBtn) registerBtn.style.display = 'none';
         if (mobileRegisterBtn) mobileRegisterBtn.style.display = 'none';
@@ -114,7 +125,7 @@ function updateNavigation() {
             btn.className = 'btn-black';
             btn.textContent = 'Déconnexion';
             btn.style.fontSize = '0.8rem';
-            btn.onclick = logout;
+            btn.onclick = confirmLogout;
             document.getElementById('navLinks').appendChild(btn);
         }
     } else {
@@ -137,6 +148,113 @@ function logout() {
     currentUser = null;
     updateNavigation();
     showToast('Déconnexion réussie', 'success');
+    location.reload();
+}
+
+function confirmLogout() {
+    showDialog({
+        icon: '⚠️',
+        title: 'Déconnexion',
+        message: 'Voulez-vous vraiment vous déconnecter ?',
+        buttons: [
+            { label: 'Annuler', style: 'btn-black' },
+            { label: 'Déconnexion', style: 'btn-white', action: logout }
+        ]
+    });
+}
+
+// ========== MON COMPTE ==========
+
+async function openAccountModal() {
+    if (!currentUser) return;
+
+    document.getElementById('accountName').textContent = currentUser.name;
+    document.getElementById('accountEmail').textContent = currentUser.email;
+    document.getElementById('accountPhone').textContent = currentUser.phone || 'Non renseigné';
+
+    await loadUserBookings();
+    openModal('accountModal');
+}
+
+async function loadUserBookings() {
+    const container = document.getElementById('accountBookings');
+    container.innerHTML = '<div class="spinner" style="margin:2rem auto;"></div>';
+
+    try {
+        const response = await fetch(`${API_URL}/bookings`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (!response.ok) throw new Error('Failed');
+
+        const bookings = await response.json();
+        const now = new Date();
+
+        const futureBookings = bookings.filter(b => {
+            const showtime = new Date(`${b.date}T${b.time}`);
+            return showtime > now && b.status === 'confirmed';
+        });
+
+        if (futureBookings.length === 0) {
+            container.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:3rem 1rem;">Aucune réservation active</p>';
+            return;
+        }
+
+        container.innerHTML = futureBookings.map(b => {
+            const showtime = new Date(`${b.date}T${b.time}`);
+            const minutesUntil = (showtime - now) / 60000;
+            const canCancel = minutesUntil > 25;
+
+            return `
+                <div style="background:var(--black); border:1px solid var(--border-gray); padding:1.25rem; margin-bottom:1rem;">
+                    <div style="margin-bottom:1rem;">
+                        <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">${b.title}</h4>
+                        <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">📅 ${new Date(b.date).toLocaleDateString('fr-FR')} à ${b.time}</p>
+                        <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">🪑 Places : ${b.seats}</p>
+                        <p style="font-size:1.1rem; font-weight:700; margin-top:0.5rem;">${parseInt(b.total_price).toLocaleString('fr-FR')} FCFA</p>
+                    </div>
+                    ${canCancel
+                    ? `<button class="btn-black" style="width:100%; padding:0.7rem; font-size:0.85rem;" onclick="cancelBooking(${b.id})">Annuler la réservation</button>`
+                    : `<p style="color:#999; font-size:0.8rem; text-align:center; padding:0.5rem;">⚠️ Annulation impossible (moins de 25 min)</p>`
+                }
+                </div>
+            `;
+        }).join('');
+    } catch (e) {
+        container.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:2rem;">Erreur</p>';
+    }
+}
+
+async function cancelBooking(bookingId) {
+    showDialog({
+        icon: '⚠️',
+        title: 'Annuler',
+        message: 'Annuler cette réservation ?',
+        buttons: [
+            { label: 'Non', style: 'btn-black' },
+            {
+                label: 'Oui',
+                style: 'btn-white',
+                action: async () => {
+                    try {
+                        const response = await fetch(`${API_URL}/bookings/${bookingId}/cancel`, {
+                            method: 'PUT',
+                            headers: { 'Authorization': `Bearer ${authToken}` }
+                        });
+
+                        if (response.ok) {
+                            showToast('Réservation annulée');
+                            await loadUserBookings();
+                        } else {
+                            showToast('Erreur', 'error');
+                        }
+                    } catch (e) {
+                        showToast('Erreur de connexion', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
 async function login(event) {
@@ -389,6 +507,35 @@ async function openBookingModal() {
     openModal('bookingModal');
 }
 
+// ========== TICKET PRICES ==========
+async function loadTicketPrices() {
+    try {
+        const response = await fetch(`${API_URL}/settings/prices`);
+        if (response.ok) {
+            const data = await response.json();
+            ticketPrices = { adulte: data.adulte || 3000, enfant: data.enfant || 2000, popcorn: data.popcorn || 4000 };
+        }
+    } catch (e) { /* utilise les prix par défaut */ }
+    updatePriceDisplay();
+}
+
+function updatePriceDisplay() {
+    const fmt = n => n.toLocaleString('fr-FR') + ' FCFA';
+    if (document.getElementById('price-adulte')) document.getElementById('price-adulte').textContent = fmt(ticketPrices.adulte);
+    if (document.getElementById('price-enfant')) document.getElementById('price-enfant').textContent = fmt(ticketPrices.enfant);
+    if (document.getElementById('price-popcorn')) document.getElementById('price-popcorn').textContent = fmt(ticketPrices.popcorn);
+}
+
+function selectTicketType(type) {
+    selectedTicketType = type;
+    selectedSeats = [];
+    document.querySelectorAll('.ticket-type').forEach(el => el.classList.remove('active'));
+    document.getElementById(`ticket-${type}`).classList.add('active');
+    // Reset selected seats in grid
+    document.querySelectorAll('.seat.selected').forEach(s => s.classList.remove('selected'));
+    updateBookingSummary();
+}
+
 async function updateShowtimes() {
     const movieId = parseInt(document.getElementById('bookingMovie').value);
     try {
@@ -420,7 +567,7 @@ function loadSeats() {
     const showtime = showtimes.find(s => s.id === showtimeId);
     if (!showtime) return;
 
-    const TOTAL = 60; // 6 rangées x 10
+    const TOTAL = 60;
     const occupiedCount = Math.max(0, TOTAL - showtime.available_seats);
     const occupiedSeats = new Set();
 
@@ -454,8 +601,13 @@ function toggleSeat(n) {
 }
 
 function updateBookingSummary() {
+    const price = ticketPrices[selectedTicketType] || 3000;
+    const labels = { adulte: 'Adulte', enfant: 'Enfant (-12 ans)', popcorn: 'Adulte + Popcorn 🍿' };
+    const total = selectedSeats.length * price;
     document.getElementById('selectedSeatsCount').textContent = selectedSeats.length;
-    document.getElementById('totalPrice').textContent = (selectedSeats.length * 3000).toLocaleString('fr-FR') + ' FCFA';
+    document.getElementById('ticketTypeLabel').textContent = `Type : ${labels[selectedTicketType]}`;
+    document.getElementById('ticketUnitPrice').textContent = price.toLocaleString('fr-FR') + ' FCFA / place';
+    document.getElementById('totalPrice').textContent = total.toLocaleString('fr-FR') + ' FCFA';
 }
 
 async function confirmBooking() {
@@ -465,26 +617,29 @@ async function confirmBooking() {
     }
 
     const showtimeId = parseInt(document.getElementById('bookingShowtime').value);
-    const totalPrice = selectedSeats.length * 3000;
+    const price = ticketPrices[selectedTicketType] || 3000;
+    const totalPrice = selectedSeats.length * price;
+    const labels = { adulte: 'Adulte', enfant: 'Enfant', popcorn: 'Adulte + Popcorn 🍿' };
 
     try {
         const response = await fetch(`${API_URL}/bookings`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ showtime_id: showtimeId, seats: selectedSeats, total_price: totalPrice })
+            body: JSON.stringify({
+                showtime_id: showtimeId,
+                seats: selectedSeats,
+                total_price: totalPrice,
+                ticket_type: selectedTicketType
+            })
         });
 
         const data = await response.json();
 
         if (response.ok) {
+            const seatsStr = selectedSeats.join(', ');
             closeModal('bookingModal');
             selectedSeats = [];
-            showDialog({
-                icon: '🎉',
-                title: 'Réservation confirmée !',
-                message: `Places : ${data.seats || selectedSeats.join(', ')}\nTotal : ${totalPrice.toLocaleString('fr-FR')} FCFA\n\nUn email de confirmation vous a été envoyé.`,
-                buttons: [{ label: 'Parfait !', style: 'btn-white' }]
-            });
+            showToast(`Réservation confirmée ! Places ${seatsStr} · ${totalPrice.toLocaleString('fr-FR')} FCFA`);
         } else {
             showToast(data.error || 'Erreur lors de la réservation', 'error');
         }

@@ -7,24 +7,25 @@ let showtimes = [];
 let allShowtimes = [];
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     checkAdminAuth();
     loadStats();
     loadMovies();
     loadAllShowtimes();
     loadBookings();
     loadUsers();
+    loadPrices();
 });
 
 function checkAdminAuth() {
     authToken = localStorage.getItem('authToken');
     const user = localStorage.getItem('currentUser');
-    
+
     if (!authToken || !user) {
         window.location.href = 'index.html';
         return;
     }
-    
+
     currentUser = JSON.parse(user);
     if (!currentUser.is_admin) {
         alert('Accès refusé');
@@ -45,7 +46,7 @@ async function loadStats() {
         const response = await fetch(`${API_URL}/admin/stats`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         const stats = await response.json();
         document.getElementById('statUsers').textContent = stats.users;
         document.getElementById('statBookings').textContent = stats.bookings;
@@ -62,13 +63,36 @@ function switchTab(tabName) {
     // Update tab buttons
     document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
     event.target.classList.add('active');
-    
+
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     document.getElementById(tabName + 'Tab').classList.add('active');
 }
 
 // ========== MOVIES ==========
+
+function previewPoster(input) {
+    const preview = document.getElementById('posterPreview');
+    const file = input.files[0];
+
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('⚠️ L\'image doit faire moins de 5 MB');
+            input.value = '';
+            preview.innerHTML = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            document.getElementById('moviePoster').value = e.target.result;
+            preview.innerHTML = `<img src="${e.target.result}" style="max-width:200px; max-height:300px; border:1px solid #333;">`;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = '';
+    }
+}
 
 async function loadMovies() {
     try {
@@ -106,6 +130,8 @@ function openAddMovieModal() {
     document.getElementById('movieGenre').value = '';
     document.getElementById('movieDuration').value = '';
     document.getElementById('moviePoster').value = '';
+    document.getElementById('moviePosterFile').value = '';
+    document.getElementById('posterPreview').innerHTML = '';
     document.getElementById('movieReleaseDate').value = '';
     document.getElementById('movieEndDate').value = '';
     document.getElementById('movieDescription').value = '';
@@ -121,6 +147,16 @@ function editMovie(movieId) {
     document.getElementById('movieGenre').value = movie.genre;
     document.getElementById('movieDuration').value = movie.duration;
     document.getElementById('moviePoster').value = movie.poster_url || '';
+    document.getElementById('moviePosterFile').value = '';
+
+    // Show existing poster
+    const preview = document.getElementById('posterPreview');
+    if (movie.poster_url) {
+        preview.innerHTML = `<img src="${movie.poster_url}" style="max-width:200px; max-height:300px; border:1px solid #333;">`;
+    } else {
+        preview.innerHTML = '';
+    }
+
     document.getElementById('movieReleaseDate').value = movie.release_date || '';
     document.getElementById('movieEndDate').value = movie.end_date || '';
     document.getElementById('movieDescription').value = movie.description || '';
@@ -130,7 +166,7 @@ function editMovie(movieId) {
 
 async function saveMovie(event) {
     event.preventDefault();
-    
+
     const movieId = document.getElementById('movieId').value;
     const data = {
         title: document.getElementById('movieTitle').value,
@@ -142,11 +178,11 @@ async function saveMovie(event) {
         description: document.getElementById('movieDescription').value,
         is_active: document.getElementById('movieActive').checked ? 1 : 0
     };
-    
+
     try {
         const url = movieId ? `${API_URL}/movies/${movieId}` : `${API_URL}/movies`;
         const method = movieId ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -155,7 +191,7 @@ async function saveMovie(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (response.ok) {
             alert(movieId ? 'Film modifié avec succès' : 'Film ajouté avec succès');
             closeModal('movieFormModal');
@@ -172,13 +208,13 @@ async function saveMovie(event) {
 
 async function deleteMovie(movieId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer ce film ?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/movies/${movieId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         if (response.ok) {
             alert('Film supprimé avec succès');
             loadMovies();
@@ -234,41 +270,41 @@ function displayShowtimesTable(showtimesData) {
 function openAddShowtimeModal() {
     document.getElementById('showtimeFormTitle').textContent = 'AJOUTER UNE SÉANCE';
     document.getElementById('showtimeId').value = '';
-    
+
     // Populate movie select
     const select = document.getElementById('showtimeMovie');
     select.innerHTML = movies.map(m => `<option value="${m.id}">${m.title}</option>`).join('');
-    
+
     document.getElementById('showtimeDate').value = '';
     document.getElementById('showtimeTime').value = '';
     document.getElementById('showtimeRoom').value = 'Salle 1';
     document.getElementById('showtimePrice').value = '3000';
     document.getElementById('showtimeSeats').value = '150';
-    
+
     openModal('showtimeFormModal');
 }
 
 function editShowtime(showtimeId) {
     const showtime = allShowtimes.find(st => st.id === showtimeId);
-    
+
     document.getElementById('showtimeFormTitle').textContent = 'MODIFIER LA SÉANCE';
     document.getElementById('showtimeId').value = showtime.id;
-    
+
     const select = document.getElementById('showtimeMovie');
     select.innerHTML = movies.map(m => `<option value="${m.id}" ${m.id === showtime.movie_id ? 'selected' : ''}>${m.title}</option>`).join('');
-    
+
     document.getElementById('showtimeDate').value = showtime.date;
     document.getElementById('showtimeTime').value = showtime.time;
     document.getElementById('showtimeRoom').value = showtime.room;
     document.getElementById('showtimePrice').value = showtime.price;
     document.getElementById('showtimeSeats').value = showtime.total_seats;
-    
+
     openModal('showtimeFormModal');
 }
 
 async function saveShowtime(event) {
     event.preventDefault();
-    
+
     const showtimeId = document.getElementById('showtimeId').value;
     const data = {
         movie_id: parseInt(document.getElementById('showtimeMovie').value),
@@ -278,11 +314,11 @@ async function saveShowtime(event) {
         price: parseFloat(document.getElementById('showtimePrice').value),
         total_seats: parseInt(document.getElementById('showtimeSeats').value)
     };
-    
+
     try {
         const url = showtimeId ? `${API_URL}/showtimes/${showtimeId}` : `${API_URL}/showtimes`;
         const method = showtimeId ? 'PUT' : 'POST';
-        
+
         const response = await fetch(url, {
             method: method,
             headers: {
@@ -291,7 +327,7 @@ async function saveShowtime(event) {
             },
             body: JSON.stringify(data)
         });
-        
+
         if (response.ok) {
             alert(showtimeId ? 'Séance modifiée avec succès' : 'Séance ajoutée avec succès');
             closeModal('showtimeFormModal');
@@ -307,13 +343,13 @@ async function saveShowtime(event) {
 
 async function deleteShowtime(showtimeId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) return;
-    
+
     try {
         const response = await fetch(`${API_URL}/showtimes/${showtimeId}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         if (response.ok) {
             alert('Séance supprimée avec succès');
             loadAllShowtimes();
@@ -333,7 +369,7 @@ async function loadBookings() {
         const response = await fetch(`${API_URL}/admin/bookings`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         const bookings = await response.json();
         displayBookingsTable(bookings);
     } catch (error) {
@@ -364,7 +400,7 @@ async function loadUsers() {
         const response = await fetch(`${API_URL}/admin/users`, {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        
+
         const users = await response.json();
         displayUsersTable(users);
     } catch (error) {
@@ -398,9 +434,52 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('active');
 }
 
+// ========== PRICE SETTINGS ==========
+
+async function loadPrices() {
+    try {
+        const response = await fetch(`${API_URL}/settings/prices`);
+        if (response.ok) {
+            const prices = await response.json();
+            if (document.getElementById('priceAdulte')) document.getElementById('priceAdulte').value = prices.adulte || 3000;
+            if (document.getElementById('priceEnfant')) document.getElementById('priceEnfant').value = prices.enfant || 2000;
+            if (document.getElementById('pricePopcorn')) document.getElementById('pricePopcorn').value = prices.popcorn || 4000;
+        }
+    } catch (e) {
+        console.error('Could not load prices');
+    }
+}
+
+async function savePrices() {
+    const adulte = parseInt(document.getElementById('priceAdulte').value);
+    const enfant = parseInt(document.getElementById('priceEnfant').value);
+    const popcorn = parseInt(document.getElementById('pricePopcorn').value);
+
+    if (!adulte || !enfant || !popcorn || adulte < 500 || enfant < 500 || popcorn < 500) {
+        alert('❌ Veuillez entrer des prix valides (minimum 500 FCFA)');
+        return;
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/admin/prices`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ adulte, enfant, popcorn })
+        });
+
+        if (response.ok) {
+            alert(`✅ Tarifs mis à jour !\n\n🧑 Adulte : ${adulte.toLocaleString('fr-FR')} FCFA\n👶 Enfant : ${enfant.toLocaleString('fr-FR')} FCFA\n🍿 Adulte+Popcorn : ${popcorn.toLocaleString('fr-FR')} FCFA`);
+        } else {
+            alert('❌ Erreur lors de la mise à jour des tarifs');
+        }
+    } catch (e) {
+        alert('❌ Erreur de connexion');
+    }
+}
+
 // Close modal on outside click
 document.querySelectorAll('.modal').forEach(modal => {
-    modal.addEventListener('click', function(e) {
+    modal.addEventListener('click', function (e) {
         if (e.target === modal) {
             closeModal(modal.id);
         }
