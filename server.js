@@ -70,8 +70,8 @@ async function initDatabase() {
             time TIME NOT NULL,
             room TEXT NOT NULL,
             price REAL DEFAULT 3000,
-            total_seats INTEGER DEFAULT 100,
-            available_seats INTEGER DEFAULT 100
+            total_seats INTEGER DEFAULT 60,
+            available_seats INTEGER DEFAULT 60
         )`);
 
         await pool.query(`CREATE TABLE IF NOT EXISTS bookings (
@@ -364,7 +364,7 @@ app.post('/api/showtimes', authenticateToken, isAdmin, async (req, res) => {
     try {
         const result = await pool.query(
             'INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats) VALUES ($1, $2, $3, $4, $5, $6, $6) RETURNING id',
-            [movie_id, date, time, room, price || 3000, total_seats || 100]
+            [movie_id, date, time, room, price || 3000, total_seats || 60]
         );
         res.json({ id: result.rows[0].id, message: 'Showtime created successfully' });
     } catch (error) {

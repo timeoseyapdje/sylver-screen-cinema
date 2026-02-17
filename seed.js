@@ -189,7 +189,10 @@ async function seed() {
         // 2. Insérer les séances
         console.log('\n📅 Ajout des séances...');
 
-        // Delete old showtimes (optional - only keep if you want fresh showtimes each deploy)
+        // Corriger les séances existantes à 150 places → 60
+        await pool.query(`UPDATE showtimes SET total_seats = 60, available_seats = LEAST(available_seats, 60) WHERE total_seats = 150`);
+
+        // Supprimer les séances passées
         await pool.query('DELETE FROM showtimes WHERE date < CURRENT_DATE');
 
         const showtimes = [
@@ -216,8 +219,8 @@ async function seed() {
                 const dateStr = date.toISOString().split('T')[0];
 
                 const showtime = showtimes[Math.floor(Math.random() * showtimes.length)];
-                const seats = 150;
-                const available = seats - Math.floor(Math.random() * 30);
+                const seats = 60;
+                const available = seats - Math.floor(Math.random() * 15);
 
                 // Check if this showtime already exists
                 const existing = await pool.query(
