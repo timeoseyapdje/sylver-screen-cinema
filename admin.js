@@ -279,7 +279,7 @@ function openAddShowtimeModal() {
     document.getElementById('showtimeTime').value = '';
     document.getElementById('showtimeRoom').value = 'Salle 1';
     document.getElementById('showtimePrice').value = '3000';
-    document.getElementById('showtimeSeats').value = '150';
+    document.getElementById('showtimeSeats').value = '60';
 
     openModal('showtimeFormModal');
 }
