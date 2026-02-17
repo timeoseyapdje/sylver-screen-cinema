@@ -1296,3 +1296,166 @@
         .tab-content.active {
             display: block;
         }
+
+        /* ========== RESPONSIVE MOBILE ========== */
+        @media (max-width: 768px) {
+            nav .nav-links {
+                display: none;
+            }
+
+            #mobileLogout {
+                display: block !important;
+                font-size: 0.75rem;
+                padding: 0.6rem 1rem;
+            }
+
+            .admin-panel {
+                padding: 0.5rem;
+            }
+
+            .admin-header {
+                padding: 1.5rem 1rem;
+            }
+
+            .admin-header h1 {
+                font-size: 1.4rem;
+                letter-spacing: 1px;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+                overflow-x: auto;
+            }
+
+            .tab {
+                font-size: 0.7rem;
+                padding: 0.6rem 0.8rem;
+                flex: 1 1 40%;
+                text-align: center;
+                white-space: nowrap;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.75rem;
+            }
+
+            .stat-card {
+                padding: 1rem 0.75rem;
+            }
+
+            .stat-value {
+                font-size: 1.4rem;
+            }
+
+            .stat-label {
+                font-size: 0.65rem;
+            }
+
+            .admin-section {
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+                overflow-x: auto;
+            }
+
+            .admin-section h2 {
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+            }
+
+            /* Tables responsive avec scroll horizontal */
+            .admin-section table {
+                display: block;
+                overflow-x: auto;
+                white-space: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            table {
+                font-size: 0.7rem;
+                min-width: 600px;
+            }
+
+            table th,
+            table td {
+                padding: 0.5rem 0.4rem;
+            }
+
+            .btn-edit,
+            .btn-delete {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.65rem;
+            }
+
+            .btn-white,
+            .btn-black {
+                padding: 0.6rem 1rem;
+                font-size: 0.75rem;
+            }
+
+            .section-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .section-actions button {
+                width: 100%;
+            }
+
+            .modal-content {
+                width: 98%;
+                max-width: 100%;
+                max-height: 95vh;
+                padding: 0;
+                margin: 0.5rem;
+            }
+
+            .modal-header {
+                padding: 1rem;
+            }
+
+            .modal-header h2 {
+                font-size: 1.2rem;
+            }
+
+            .modal-body {
+                padding: 1rem;
+                max-height: calc(95vh - 80px);
+                overflow-y: auto;
+            }
+
+            .form-group {
+                margin-bottom: 1rem;
+            }
+
+            .form-group label {
+                font-size: 0.75rem;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                padding: 0.7rem;
+                font-size: 0.9rem;
+            }
+
+            /* Prix settings sur mobile */
+            .admin-section>div[style*="grid"] {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .admin-header h1 {
+                font-size: 1.2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tab {
+                flex: 1 1 100%;
+            }
+        }

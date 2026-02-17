@@ -1,5 +1,5 @@
 // admin.js - Admin panel JavaScript
-const API_URL = 'http://localhost:3000/api';
+const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
 let authToken = null;
 let currentUser = null;
 let movies = [];
@@ -15,6 +15,12 @@ document.addEventListener('DOMContentLoaded', function () {
     loadBookings();
     loadUsers();
     loadPrices();
+
+    // Auto-refresh toutes les 30 secondes
+    setInterval(() => {
+        loadStats();
+        loadBookings();
+    }, 30000);
 });
 
 function checkAdminAuth() {
@@ -60,9 +66,14 @@ async function loadStats() {
 // ========== TABS ==========
 
 function switchTab(tabName) {
-    // Update tab buttons
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
+    // Update tab buttons - find which tab was clicked by checking data or text
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.textContent.toLowerCase().includes(tabName.toLowerCase()) ||
+            tab.onclick.toString().includes(tabName)) {
+            tab.classList.add('active');
+        }
+    });
 
     // Update tab content
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -279,7 +290,7 @@ function openAddShowtimeModal() {
     document.getElementById('showtimeTime').value = '';
     document.getElementById('showtimeRoom').value = 'Salle 1';
     document.getElementById('showtimePrice').value = '3000';
-    document.getElementById('showtimeSeats').value = '60';
+    document.getElementById('showtimeSeats').value = '150';
 
     openModal('showtimeFormModal');
 }
@@ -441,9 +452,22 @@ async function loadPrices() {
         const response = await fetch(`${API_URL}/settings/prices`);
         if (response.ok) {
             const prices = await response.json();
-            if (document.getElementById('priceAdulte')) document.getElementById('priceAdulte').value = prices.adulte || 3000;
-            if (document.getElementById('priceEnfant')) document.getElementById('priceEnfant').value = prices.enfant || 2000;
-            if (document.getElementById('pricePopcorn')) document.getElementById('pricePopcorn').value = prices.popcorn || 4000;
+            const adulteInput = document.getElementById('priceAdulte');
+            const enfantInput = document.getElementById('priceEnfant');
+            const popcornInput = document.getElementById('pricePopcorn');
+
+            if (adulteInput) {
+                adulteInput.value = '';
+                adulteInput.placeholder = `Actuel : ${(prices.adulte || 3000).toLocaleString('fr-FR')} FCFA`;
+            }
+            if (enfantInput) {
+                enfantInput.value = '';
+                enfantInput.placeholder = `Actuel : ${(prices.enfant || 2000).toLocaleString('fr-FR')} FCFA`;
+            }
+            if (popcornInput) {
+                popcornInput.value = '';
+                popcornInput.placeholder = `Actuel : ${(prices.popcorn || 4000).toLocaleString('fr-FR')} FCFA`;
+            }
         }
     } catch (e) {
         console.error('Could not load prices');
@@ -455,20 +479,38 @@ async function savePrices() {
     const enfant = parseInt(document.getElementById('priceEnfant').value);
     const popcorn = parseInt(document.getElementById('pricePopcorn').value);
 
-    if (!adulte || !enfant || !popcorn || adulte < 500 || enfant < 500 || popcorn < 500) {
-        alert('❌ Veuillez entrer des prix valides (minimum 500 FCFA)');
+    // Valider que au moins UN prix est renseigné
+    if (!adulte && !enfant && !popcorn) {
+        alert('❌ Veuillez entrer au moins un prix');
         return;
     }
+
+    // Valider que les prix renseignés sont >= 500
+    if ((adulte && adulte < 500) || (enfant && enfant < 500) || (popcorn && popcorn < 500)) {
+        alert('❌ Les prix doivent être au minimum 500 FCFA');
+        return;
+    }
+
+    // Créer objet avec seulement les prix modifiés
+    const updates = {};
+    if (adulte) updates.adulte = adulte;
+    if (enfant) updates.enfant = enfant;
+    if (popcorn) updates.popcorn = popcorn;
 
     try {
         const response = await fetch(`${API_URL}/admin/prices`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify({ adulte, enfant, popcorn })
+            body: JSON.stringify(updates)
         });
 
         if (response.ok) {
-            alert(`✅ Tarifs mis à jour !\n\n🧑 Adulte : ${adulte.toLocaleString('fr-FR')} FCFA\n👶 Enfant : ${enfant.toLocaleString('fr-FR')} FCFA\n🍿 Adulte+Popcorn : ${popcorn.toLocaleString('fr-FR')} FCFA`);
+            const messages = [];
+            if (adulte) messages.push(`🧑 Adulte : ${adulte.toLocaleString('fr-FR')} FCFA`);
+            if (enfant) messages.push(`👶 Enfant : ${enfant.toLocaleString('fr-FR')} FCFA`);
+            if (popcorn) messages.push(`🍿 Popcorn : ${popcorn.toLocaleString('fr-FR')} FCFA`);
+            alert(`✅ Tarifs mis à jour !\n\n${messages.join('\n')}`);
+            await loadPrices(); // Recharger pour afficher les nouvelles valeurs
         } else {
             alert('❌ Erreur lors de la mise à jour des tarifs');
         }

@@ -203,7 +203,7 @@ async function loadUserBookings() {
         container.innerHTML = futureBookings.map(b => {
             const showtime = new Date(`${b.date}T${b.time}`);
             const minutesUntil = (showtime - now) / 60000;
-            const canCancel = minutesUntil > 25;
+            const canCancel = minutesUntil > 5;
 
             return `
                 <div style="background:var(--black); border:1px solid var(--border-gray); padding:1.25rem; margin-bottom:1rem;">
@@ -215,7 +215,7 @@ async function loadUserBookings() {
                     </div>
                     ${canCancel
                     ? `<button class="btn-black" style="width:100%; padding:0.7rem; font-size:0.85rem;" onclick="cancelBooking(${b.id})">Annuler la réservation</button>`
-                    : `<p style="color:#999; font-size:0.8rem; text-align:center; padding:0.5rem;">⚠️ Annulation impossible (moins de 25 min)</p>`
+                    : `<p style="color:#999; font-size:0.8rem; text-align:center; padding:0.5rem;">⚠️ Annulation impossible (moins de 5 min)</p>`
                 }
                 </div>
             `;

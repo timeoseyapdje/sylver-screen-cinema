@@ -15,6 +15,8 @@
     <header>
         <nav>
             <div class="logo-container">
+                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83"
+                    alt="Sylver Screen" class="logo-img">
                 <div class="logo-text">SYLVER SCREEN</div>
             </div>
             <div class="nav-links">
@@ -27,6 +29,7 @@
     <div class="admin-panel">
         <div class="admin-header">
             <h1>PANNEAU ADMIN</h1>
+            <button class="btn-black" onclick="logout()" style="display:none;" id="mobileLogout">Déconnexion</button>
         </div>
 
         <!-- Stats -->
@@ -279,7 +282,7 @@
                         </div>
                         <div class="form-group">
                             <label>Places totales</label>
-                            <input type="number" id="showtimeSeats" value="60" required>
+                            <input type="number" id="showtimeSeats" value="150" required>
                         </div>
                     </div>
                     <button type="submit" class="btn-white" style="width: 100%;">Enregistrer</button>
