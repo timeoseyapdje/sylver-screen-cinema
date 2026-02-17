@@ -283,7 +283,10 @@ function displayMovies(moviesData) {
     grid.innerHTML = moviesData.map(movie => `
         <div class="movie-card" onclick="showMovieDetails(${movie.id})">
             <div class="movie-poster">
-                ${movie.poster_url ? `<img src="${movie.poster_url}" alt="${movie.title}" loading="lazy">` : '🎬'}
+                ${movie.poster_url
+            ? `<img src="${movie.poster_url}" alt="${movie.title}" loading="lazy" onerror="this.parentElement.innerHTML='<div style=\\'display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;\\'><span style=\\'font-size:3rem;\\'>🎬</span><span style=\\'font-size:0.8rem;letter-spacing:1px;color:#999;\\'>${movie.title.toUpperCase()}</span></div>'">`
+            : `<div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:1rem;"><span style="font-size:3rem;">🎬</span><span style="font-size:0.8rem;letter-spacing:1px;color:#999;">${movie.title.toUpperCase()}</span></div>`
+        }
             </div>
             <div class="movie-info">
                 <div class="movie-title">${movie.title}</div>
