@@ -142,34 +142,51 @@ async function seed() {
     try {
         await initDatabase();
 
-        // 1. Films - vider et réinsérer proprement
-        console.log('🎬 Mise à jour des films...');
+        // 1. Films - ajouter seulement les nouveaux
+        console.log('🎬 Vérification des films...');
 
-        // Supprimer toutes les séances et films existants pour repartir proprement
-        await pool.query('DELETE FROM showtimes');
-        await pool.query('DELETE FROM movies');
-        console.log('   ✓ Anciens films supprimés');
+        let addedMovies = 0;
+        let updatedMovies = 0;
 
         for (const movie of movies) {
             const rating = (3.5 + Math.random() * 1.5).toFixed(1);
             const votes = Math.floor(50 + Math.random() * 300);
-            await pool.query(
-                `INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date, rating, votes_count)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-                [movie.title, movie.genre, movie.duration, movie.description, movie.poster_url,
-                movie.release_date, movie.end_date, rating, votes]
-            );
-            console.log(`   ✓ ${movie.title}`);
+
+            // Vérifier si le film existe déjà
+            const existing = await pool.query('SELECT id FROM movies WHERE title = $1', [movie.title]);
+
+            if (existing.rows.length === 0) {
+                await pool.query(
+                    `INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date, rating, votes_count)
+                     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+                    [movie.title, movie.genre, movie.duration, movie.description, movie.poster_url,
+                    movie.release_date, movie.end_date, rating, votes]
+                );
+                addedMovies++;
+                console.log(`   ✓ ${movie.title} ajouté`);
+            } else {
+                // Mettre à jour le poster et la description si différents
+                await pool.query(
+                    `UPDATE movies SET poster_url = $1, description = $2, genre = $3 WHERE title = $4`,
+                    [movie.poster_url, movie.description, movie.genre, movie.title]
+                );
+                updatedMovies++;
+                console.log(`   ↻ ${movie.title} mis à jour`);
+            }
         }
+        console.log(`   📊 ${addedMovies} ajoutés, ${updatedMovies} mis à jour`);
 
         // 2. Séances
         console.log('\n📅 Ajout des séances...');
+        const now = new Date();
+        const currentHour = now.getHours();
+
+        // Horaires proches pour tester (dans les prochaines heures)
         const slots = [
-            { time: '11:00', room: 'Salle 1' },
-            { time: '14:00', room: 'Salle 2' },
-            { time: '17:00', room: 'Salle 1' },
-            { time: '20:00', room: 'Salle 2' },
-            { time: '22:00', room: 'Salle 1' }
+            { time: '14:00', room: 'Salle 1' },
+            { time: '16:30', room: 'Salle 2' },
+            { time: '19:00', room: 'Salle 1' },
+            { time: '21:30', room: 'Salle 2' }
         ];
 
         const movieResult = await pool.query('SELECT id FROM movies ORDER BY id');
@@ -177,21 +194,40 @@ async function seed() {
         let count = 0;
 
         for (const movieId of movieIds) {
-            for (let d = 0; d < 7; d++) {
+            // Séances aujourd'hui + demain seulement
+            for (let d = 0; d < 2; d++) {
                 const date = new Date();
                 date.setDate(date.getDate() + d);
                 const dateStr = date.toISOString().split('T')[0];
 
-                // 2-3 séances par jour par film
-                const daySlots = slots.sort(() => Math.random() - 0.5).slice(0, 2 + Math.floor(Math.random() * 2));
+                // Si c'est aujourd'hui, filtrer les horaires déjà passés
+                let availableSlots = [...slots];
+                if (d === 0) {
+                    availableSlots = slots.filter(slot => {
+                        const hour = parseInt(slot.time.split(':')[0]);
+                        return hour > currentHour + 1; // Au moins 1h dans le futur
+                    });
+                }
+
+                // 2 séances par jour
+                const daySlots = availableSlots.sort(() => Math.random() - 0.5).slice(0, Math.min(2, availableSlots.length));
                 for (const slot of daySlots) {
-                    const available = 60 - Math.floor(Math.random() * 20);
-                    await pool.query(
-                        `INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats)
-                         VALUES ($1, $2, $3, $4, 3000, 60, $5)`,
-                        [movieId, dateStr, slot.time, slot.room, available]
+                    const available = 60 - Math.floor(Math.random() * 10);
+
+                    // Vérifier si cette séance existe déjà
+                    const existing = await pool.query(
+                        'SELECT id FROM showtimes WHERE movie_id = $1 AND date = $2 AND time = $3 AND room = $4',
+                        [movieId, dateStr, slot.time, slot.room]
                     );
-                    count++;
+
+                    if (existing.rows.length === 0) {
+                        await pool.query(
+                            `INSERT INTO showtimes (movie_id, date, time, room, price, total_seats, available_seats)
+                             VALUES ($1, $2, $3, $4, 3000, 60, $5)`,
+                            [movieId, dateStr, slot.time, slot.room, available]
+                        );
+                        count++;
+                    }
                 }
             }
         }
