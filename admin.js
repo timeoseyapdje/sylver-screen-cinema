@@ -199,8 +199,12 @@ async function loadMovies() {
 
 function displayMoviesTable(moviesData) {
     const tbody = document.querySelector('#moviesTable tbody');
+    if (!tbody) {
+        console.error('moviesTable tbody not found');
+        return;
+    }
 
-    if (!moviesData || moviesData.length === 0) {
+    if (!moviesData || !Array.isArray(moviesData) || moviesData.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Aucun film</td></tr>';
         return;
     }
@@ -358,6 +362,15 @@ async function loadAllShowtimes() {
 }
 
 function displayShowtimesTable(showtimesData) {
+    if (!showtimesData || !Array.isArray(showtimesData)) {
+        console.error('Invalid showtimesData:', showtimesData);
+        const tbody = document.querySelector('#showtimesTable tbody');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Erreur de chargement</td></tr>';
+        document.getElementById('pastShowtimesCount').textContent = '0';
+        document.getElementById('pastShowtimesRevenue').textContent = '0';
+        return;
+    }
+
     const now = new Date();
 
     // Séparer futures et passées
@@ -410,8 +423,11 @@ function displayShowtimesTable(showtimesData) {
     // Calculer revenus totaux des séances passées
     let totalRevenue = 0;
     past.forEach(st => {
-        const sold = st.total_seats - st.available_seats;
-        totalRevenue += sold * st.price;
+        const sold = (st.total_seats || 0) - (st.available_seats || 0);
+        const price = st.price || 0;
+        if (!isNaN(sold) && !isNaN(price)) {
+            totalRevenue += sold * price;
+        }
     });
 
     // Afficher séances passées dans archive
@@ -553,6 +569,15 @@ async function loadBookings() {
 }
 
 function displayBookingsTable(bookingsData) {
+    if (!bookingsData || !Array.isArray(bookingsData)) {
+        console.error('Invalid bookingsData:', bookingsData);
+        const tbody = document.querySelector('#bookingsTable tbody');
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Erreur de chargement</td></tr>';
+        document.getElementById('pastBookingsCount').textContent = '0';
+        document.getElementById('pastBookingsRevenue').textContent = '0';
+        return;
+    }
+
     const now = new Date();
 
     // Séparer actives (futures + confirmées) et archives (passées ou annulées)
@@ -617,7 +642,10 @@ function displayBookingsTable(bookingsData) {
     let totalRevenue = 0;
     archived.forEach(booking => {
         if (booking.status === 'confirmed') {
-            totalRevenue += parseInt(booking.total_price);
+            const price = parseInt(booking.total_price) || 0;
+            if (!isNaN(price)) {
+                totalRevenue += price;
+            }
         }
     });
 

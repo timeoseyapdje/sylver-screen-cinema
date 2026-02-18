@@ -180,6 +180,7 @@ app.post('/api/auth/register', async (req, res) => {
 
         console.log(`✅ User registered successfully: ${email}`);
 
+        // Envoyer email en arrière-plan (non-bloquant)
         if (emailNotifications) {
             const welcomeHTML = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -191,9 +192,13 @@ app.post('/api/auth/register', async (req, res) => {
                     <p style="color: #999; font-size: 12px;">Sylver Screen Cinema - Douala Grand Mall</p>
                 </div>
             `;
-            await sendEmail(email, 'Bienvenue chez Sylver Screen Cinema ! 🎬', welcomeHTML);
+            // Ne pas attendre l'email - envoyer en arrière-plan
+            sendEmail(email, 'Bienvenue chez Sylver Screen Cinema ! 🎬', welcomeHTML)
+                .then(() => console.log(`📧 Welcome email sent to ${email}`))
+                .catch(err => console.error(`📧 Email error for ${email}:`, err.message));
         }
 
+        // Répondre immédiatement sans attendre l'email
         res.json({ token, user: { id: userId, name, email, phone, is_admin: false } });
     } catch (error) {
         console.error('❌ Registration error:', error);

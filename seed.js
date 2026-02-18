@@ -211,9 +211,15 @@ async function seed() {
                 if (d === 0) {
                     const nowMinutes = now.getHours() * 60 + now.getMinutes();
                     availableSlots = slots.filter(slot => {
-                        const [hour, min] = slot.time.split(':').map(Number);
-                        const slotMinutes = hour * 60 + min;
-                        return slotMinutes > nowMinutes + 30; // Au moins 30min dans le futur
+                        try {
+                            const [hour, min] = slot.time.split(':').map(Number);
+                            if (isNaN(hour) || isNaN(min)) return false;
+                            const slotMinutes = hour * 60 + min;
+                            return slotMinutes > nowMinutes + 30; // Au moins 30min dans le futur
+                        } catch (e) {
+                            console.error('Error parsing slot time:', slot.time);
+                            return false;
+                        }
                     });
                 }
 

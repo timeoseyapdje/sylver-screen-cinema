@@ -393,7 +393,7 @@ async function registerStep1(event) {
     event.preventDefault();
     const btn = event.target.querySelector('button[type=submit]');
     btn.disabled = true;
-    btn.textContent = 'Création en cours...';
+    btn.textContent = '⏳ Inscription...';
 
     const name = document.getElementById('registerName').value;
     const email = document.getElementById('registerEmail').value;
@@ -417,30 +417,43 @@ async function registerStep1(event) {
             localStorage.setItem('authToken', authToken);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
 
+            // Fermer le modal AVANT d'afficher le message
             closeModal('registerModal');
+
+            // Mettre à jour la navigation
             updateNavigation();
 
-            showDialog({
-                icon: '🎬',
-                title: 'Bienvenue !',
-                message: `Votre compte a été créé avec succès. Bonne séance chez Sylver Screen, ${name} !`,
-                buttons: [
-                    { label: 'Voir les films', style: 'btn-white', action: () => document.getElementById('movies').scrollIntoView({ behavior: 'smooth' }) },
-                    { label: 'Fermer', style: 'btn-black', action: () => { } }
-                ]
-            });
-        } else {
-            // Si compte existe, proposer de se connecter
-            if (data.error && data.error.includes('existe')) {
+            // Afficher message de succès après un court délai
+            setTimeout(() => {
                 showDialog({
-                    icon: '⚠️',
-                    title: 'Compte existant',
-                    message: 'Un compte avec cet email existe déjà. Souhaitez-vous vous connecter ?',
+                    icon: '🎉',
+                    title: 'Inscription réussie !',
+                    message: `Bienvenue chez Sylver Screen, ${name} ! Votre compte a été créé avec succès. ${emailNotifications ? 'Un email de confirmation vous a été envoyé.' : ''}`,
                     buttons: [
-                        { label: 'Se connecter', style: 'btn-white', action: () => openLoginModal() },
-                        { label: 'Annuler', style: 'btn-black', action: () => { } }
+                        { label: 'Découvrir les films', style: 'btn-white', action: () => document.getElementById('movies').scrollIntoView({ behavior: 'smooth' }) },
+                        { label: 'Fermer', style: 'btn-black', action: () => { } }
                     ]
                 });
+            }, 300);
+
+            // Ne pas réinitialiser le bouton car modal fermé
+            return;
+        } else {
+            // Si compte existe, proposer de se connecter
+            if (data.error && typeof data.error === 'string' && data.error.includes('existe')) {
+                closeModal('registerModal');
+                setTimeout(() => {
+                    showDialog({
+                        icon: '⚠️',
+                        title: 'Compte existant',
+                        message: 'Un compte avec cet email existe déjà. Souhaitez-vous vous connecter ?',
+                        buttons: [
+                            { label: 'Se connecter', style: 'btn-white', action: () => { closeDialog(); openLoginModal(); } },
+                            { label: 'Annuler', style: 'btn-black', action: () => { } }
+                        ]
+                    });
+                }, 300);
+                return; // Ne pas réinitialiser le bouton
             } else {
                 showToast(data.error || 'Erreur lors de l\'inscription', 'error');
             }
@@ -448,6 +461,7 @@ async function registerStep1(event) {
     } catch (error) {
         showToast('Erreur de connexion. Vérifiez votre connexion internet.', 'error');
     } finally {
+        // Réinitialiser le bouton seulement si modal encore ouvert
         btn.disabled = false;
         btn.textContent = 'Créer mon compte';
     }
@@ -476,7 +490,7 @@ async function loadMovies() {
 function displayMovies(moviesData) {
     const grid = document.getElementById('moviesGrid');
 
-    if (!moviesData || moviesData.length === 0) {
+    if (!moviesData || !Array.isArray(moviesData) || moviesData.length === 0) {
         grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:4rem;"><p style="color:var(--text-gray);">Aucun film à l\'affiche pour le moment</p></div>';
         return;
     }
