@@ -80,6 +80,7 @@ async function initDatabase() {
             showtime_id INTEGER NOT NULL REFERENCES showtimes(id),
             seats TEXT NOT NULL,
             total_price REAL NOT NULL,
+            ticket_type TEXT,
             status TEXT DEFAULT 'confirmed',
             booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
@@ -584,6 +585,14 @@ async function ensureSettingsTable() {
     await pool.query(`INSERT INTO settings (key, value) VALUES ('price_adulte', '3000') ON CONFLICT (key) DO NOTHING`);
     await pool.query(`INSERT INTO settings (key, value) VALUES ('price_enfant', '2000') ON CONFLICT (key) DO NOTHING`);
     await pool.query(`INSERT INTO settings (key, value) VALUES ('price_popcorn', '4000') ON CONFLICT (key) DO NOTHING`);
+
+    // Migration: ajouter colonne ticket_type si elle n'existe pas
+    try {
+        await pool.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ticket_type TEXT`);
+        console.log('✅ Migration: colonne ticket_type ajoutée');
+    } catch (e) {
+        console.log('Migration ticket_type:', e.message);
+    }
 }
 
 // Get prices (public)

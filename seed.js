@@ -51,6 +51,7 @@ async function initDatabase() {
         showtime_id INTEGER NOT NULL REFERENCES showtimes(id),
         seats TEXT NOT NULL,
         total_price REAL NOT NULL,
+        ticket_type TEXT,
         status TEXT DEFAULT 'confirmed',
         booking_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )`);
