@@ -400,19 +400,39 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
     const { showtime_id, seats, tickets, total_price } = req.body;
     const user_id = req.user.id;
 
+    console.log('📝 New booking request:', { user_id, showtime_id, seats, tickets, total_price });
+
     const totalTickets = (tickets.adulte || 0) + (tickets.enfant || 0) + (tickets.popcorn || 0);
 
     try {
         const showtimeResult = await pool.query('SELECT * FROM showtimes WHERE id = $1', [showtime_id]);
-        if (showtimeResult.rows.length === 0) return res.status(404).json({ error: 'Showtime not found' });
+        if (showtimeResult.rows.length === 0) {
+            console.error('❌ Showtime not found:', showtime_id);
+            return res.status(404).json({ error: 'Showtime not found' });
+        }
 
         const showtime = showtimeResult.rows[0];
+        console.log('✅ Showtime found:', showtime.available_seats, 'seats available');
+
         if (showtime.available_seats < totalTickets) return res.status(400).json({ error: 'Places insuffisantes' });
 
-        const result = await pool.query(
-            'INSERT INTO bookings (user_id, showtime_id, seats, total_price, ticket_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [user_id, showtime_id, seats.join(', '), total_price, JSON.stringify(tickets)]
-        );
+        let result;
+        try {
+            // Essayer avec ticket_type
+            result = await pool.query(
+                'INSERT INTO bookings (user_id, showtime_id, seats, total_price, ticket_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [user_id, showtime_id, seats.join(', '), total_price, JSON.stringify(tickets)]
+            );
+            console.log('✅ Booking created WITH ticket_type:', result.rows[0].id);
+        } catch (e) {
+            // Si colonne ticket_type n'existe pas, essayer sans
+            console.log('⚠️  ticket_type column missing, inserting without it');
+            result = await pool.query(
+                'INSERT INTO bookings (user_id, showtime_id, seats, total_price) VALUES ($1, $2, $3, $4) RETURNING id',
+                [user_id, showtime_id, seats.join(', '), total_price]
+            );
+            console.log('✅ Booking created WITHOUT ticket_type:', result.rows[0].id);
+        }
 
         await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [totalTickets, showtime_id]);
 
@@ -545,15 +565,53 @@ app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
     }
 });
 
+// DEBUG endpoint - à retirer après debug
+app.get('/api/debug/bookings', async (req, res) => {
+    try {
+        const bookings = await pool.query('SELECT * FROM bookings ORDER BY id DESC LIMIT 5');
+        const showtimes = await pool.query('SELECT COUNT(*) as count FROM showtimes');
+        const users = await pool.query('SELECT COUNT(*) as count FROM users');
+        const movies = await pool.query('SELECT COUNT(*) as count FROM movies');
+
+        res.json({
+            bookings_count: bookings.rows.length,
+            bookings_sample: bookings.rows,
+            showtimes_count: showtimes.rows[0].count,
+            users_count: users.rows[0].count,
+            movies_count: movies.rows[0].count
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.get('/api/admin/bookings', authenticateToken, isAdmin, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT b.*, u.name as user_name, u.email, m.title as movie_title, s.date, s.time, s.room 
-            FROM bookings b JOIN users u ON b.user_id = u.id JOIN showtimes s ON b.showtime_id = s.id 
-            JOIN movies m ON s.movie_id = m.id ORDER BY b.booking_time DESC
+            SELECT 
+                b.id, 
+                b.user_id,
+                b.showtime_id,
+                b.seats, 
+                b.total_price, 
+                b.status, 
+                b.booking_time,
+                u.name as user_name, 
+                u.email, 
+                m.title, 
+                s.date, 
+                s.time, 
+                s.room 
+            FROM bookings b 
+            JOIN users u ON b.user_id = u.id 
+            JOIN showtimes s ON b.showtime_id = s.id 
+            JOIN movies m ON s.movie_id = m.id 
+            ORDER BY b.booking_time DESC
         `);
+        console.log(`Admin bookings query returned ${result.rows.length} rows`);
         res.json(result.rows);
     } catch (error) {
+        console.error('Admin bookings error:', error);
         res.status(500).json({ error: 'Failed to fetch bookings' });
     }
 });
