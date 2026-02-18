@@ -528,21 +528,35 @@ function updatePriceDisplay() {
 }
 
 function changeTicketQty(type, delta) {
-    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
-    const maxSeats = 10; // Limite raisonnable
+    const maxSeats = 10;
 
     ticketQuantities[type] = Math.max(0, Math.min(maxSeats, ticketQuantities[type] + delta));
 
     // Mettre à jour l'affichage
     document.getElementById(`qty-${type}`).textContent = ticketQuantities[type];
+
+    // Reset les places si on dépasse
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+    if (selectedSeats.length > totalTickets) {
+        // Désélectionner les places en trop
+        while (selectedSeats.length > totalTickets) {
+            const seatNum = selectedSeats.pop();
+            const seat = document.querySelector(`[data-seat="${seatNum}"]`);
+            if (seat) seat.classList.remove('selected');
+        }
+    }
+
     updateBookingSummary();
 }
 
 function resetTicketQuantities() {
     ticketQuantities = { adulte: 0, enfant: 0, popcorn: 0 };
+    selectedSeats = [];
     document.getElementById('qty-adulte').textContent = '0';
     document.getElementById('qty-enfant').textContent = '0';
     document.getElementById('qty-popcorn').textContent = '0';
+    // Désélectionner visuellement les places
+    document.querySelectorAll('.seat.selected').forEach(s => s.classList.remove('selected'));
 }
 
 async function updateShowtimes() {
@@ -597,12 +611,26 @@ function loadSeats() {
 }
 
 function toggleSeat(n) {
+    const totalTicketTypes = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+
+    if (totalTicketTypes === 0) {
+        showToast('Sélectionnez d\'abord le nombre de billets', 'info');
+        return;
+    }
+
     const seat = document.querySelector(`[data-seat="${n}"]`);
     const idx = selectedSeats.indexOf(n);
+
     if (idx > -1) {
+        // Désélectionner
         selectedSeats.splice(idx, 1);
         seat.classList.remove('selected');
     } else {
+        // Sélectionner seulement si on n'a pas dépassé le nombre de billets
+        if (selectedSeats.length >= totalTicketTypes) {
+            showToast(`Vous avez déjà sélectionné ${totalTicketTypes} places`, 'info');
+            return;
+        }
         selectedSeats.push(n);
         seat.classList.add('selected');
     }
@@ -610,13 +638,16 @@ function toggleSeat(n) {
 }
 
 function updateBookingSummary() {
-    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+    const totalTicketTypes = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+    const selectedSeatsCount = selectedSeats.length;
+
+    // Calcul du prix selon les types de billets
     const totalPrice =
         (ticketQuantities.adulte * ticketPrices.adulte) +
         (ticketQuantities.enfant * ticketPrices.enfant) +
         (ticketQuantities.popcorn * ticketPrices.popcorn);
 
-    document.getElementById('selectedSeatsCount').textContent = totalTickets;
+    document.getElementById('selectedSeatsCount').textContent = `${selectedSeatsCount} / ${totalTicketTypes}`;
     document.getElementById('totalPrice').textContent = totalPrice.toLocaleString('fr-FR') + ' FCFA';
 
     // Détail des billets
@@ -625,7 +656,11 @@ function updateBookingSummary() {
     if (ticketQuantities.enfant > 0) breakdown.push(`${ticketQuantities.enfant} Enfant${ticketQuantities.enfant > 1 ? 's' : ''}`);
     if (ticketQuantities.popcorn > 0) breakdown.push(`${ticketQuantities.popcorn} Popcorn`);
 
-    document.getElementById('ticketBreakdown').textContent = breakdown.length > 0 ? breakdown.join(' · ') : 'Aucun billet sélectionné';
+    const message = breakdown.length > 0
+        ? `${breakdown.join(' · ')} — Choisissez ${totalTicketTypes} places`
+        : 'Aucun billet sélectionné';
+
+    document.getElementById('ticketBreakdown').textContent = message;
 }
 
 async function confirmBooking() {
@@ -633,6 +668,16 @@ async function confirmBooking() {
 
     if (totalTickets === 0) {
         showToast('Sélectionnez au moins un billet', 'error');
+        return;
+    }
+
+    if (selectedSeats.length === 0) {
+        showToast('Choisissez vos places sur la grille', 'error');
+        return;
+    }
+
+    if (selectedSeats.length !== totalTickets) {
+        showToast(`Sélectionnez exactement ${totalTickets} places`, 'error');
         return;
     }
 
@@ -653,6 +698,7 @@ async function confirmBooking() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
             body: JSON.stringify({
                 showtime_id: showtimeId,
+                seats: selectedSeats,
                 tickets: ticketQuantities,
                 total_price: totalPrice
             })
@@ -663,13 +709,14 @@ async function confirmBooking() {
         if (response.ok) {
             closeModal('bookingModal');
             resetTicketQuantities();
+            selectedSeats = [];
 
             const breakdown = [];
             if (ticketQuantities.adulte > 0) breakdown.push(`${ticketQuantities.adulte} Adulte`);
             if (ticketQuantities.enfant > 0) breakdown.push(`${ticketQuantities.enfant} Enfant`);
             if (ticketQuantities.popcorn > 0) breakdown.push(`${ticketQuantities.popcorn} Popcorn`);
 
-            showToast(`✅ Réservation confirmée ! ${breakdown.join(' + ')} · ${totalPrice.toLocaleString('fr-FR')} FCFA`);
+            showToast(`✅ ${breakdown.join(' + ')} · Places ${selectedSeats.join(', ')}`);
         } else {
             showToast(data.error || 'Erreur lors de la réservation', 'error');
         }

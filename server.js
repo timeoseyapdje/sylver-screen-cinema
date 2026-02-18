@@ -396,7 +396,7 @@ app.delete('/api/showtimes/:id', authenticateToken, isAdmin, async (req, res) =>
 // ========== BOOKINGS ROUTES ==========
 
 app.post('/api/bookings', authenticateToken, async (req, res) => {
-    const { showtime_id, tickets, total_price } = req.body;
+    const { showtime_id, seats, tickets, total_price } = req.body;
     const user_id = req.user.id;
 
     const totalTickets = (tickets.adulte || 0) + (tickets.enfant || 0) + (tickets.popcorn || 0);
@@ -410,7 +410,7 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
 
         const result = await pool.query(
             'INSERT INTO bookings (user_id, showtime_id, seats, total_price, ticket_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [user_id, showtime_id, `${totalTickets} places`, total_price, JSON.stringify(tickets)]
+            [user_id, showtime_id, seats.join(', '), total_price, JSON.stringify(tickets)]
         );
 
         await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [totalTickets, showtime_id]);
@@ -439,6 +439,7 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
                         <p><strong>Heure:</strong> ${details.time}</p>
                         <p><strong>Salle:</strong> ${details.room}</p>
                         <p><strong>Billets:</strong> ${ticketBreakdown.join(' + ')}</p>
+                        <p><strong>Places:</strong> ${seats.join(', ')}</p>
                         <p><strong>Total:</strong> ${total_price.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                     <p>Annulation gratuite jusqu'à 5 min avant.</p>
@@ -451,7 +452,7 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
             }
         }
 
-        res.json({ id: bookingId, message: 'Booking created successfully' });
+        res.json({ id: bookingId, seats: seats.join(', '), message: 'Booking created successfully' });
     } catch (error) {
         console.error('Booking error:', error);
         res.status(500).json({ error: 'Failed to create booking' });
