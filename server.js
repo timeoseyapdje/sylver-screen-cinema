@@ -396,22 +396,24 @@ app.delete('/api/showtimes/:id', authenticateToken, isAdmin, async (req, res) =>
 // ========== BOOKINGS ROUTES ==========
 
 app.post('/api/bookings', authenticateToken, async (req, res) => {
-    const { showtime_id, seats, total_price } = req.body;
+    const { showtime_id, tickets, total_price } = req.body;
     const user_id = req.user.id;
+
+    const totalTickets = (tickets.adulte || 0) + (tickets.enfant || 0) + (tickets.popcorn || 0);
 
     try {
         const showtimeResult = await pool.query('SELECT * FROM showtimes WHERE id = $1', [showtime_id]);
         if (showtimeResult.rows.length === 0) return res.status(404).json({ error: 'Showtime not found' });
 
         const showtime = showtimeResult.rows[0];
-        if (showtime.available_seats < seats.length) return res.status(400).json({ error: 'Not enough available seats' });
+        if (showtime.available_seats < totalTickets) return res.status(400).json({ error: 'Places insuffisantes' });
 
         const result = await pool.query(
-            'INSERT INTO bookings (user_id, showtime_id, seats, total_price) VALUES ($1, $2, $3, $4) RETURNING id',
-            [user_id, showtime_id, JSON.stringify(seats), total_price]
+            'INSERT INTO bookings (user_id, showtime_id, seats, total_price, ticket_type) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+            [user_id, showtime_id, `${totalTickets} places`, total_price, JSON.stringify(tickets)]
         );
 
-        await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [seats.length, showtime_id]);
+        await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [totalTickets, showtime_id]);
 
         const bookingId = result.rows[0].id;
         const bookingDetails = await pool.query(`
@@ -422,6 +424,11 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
 
         if (bookingDetails.rows.length > 0) {
             const details = bookingDetails.rows[0];
+            const ticketBreakdown = [];
+            if (tickets.adulte > 0) ticketBreakdown.push(`${tickets.adulte} Adulte(s)`);
+            if (tickets.enfant > 0) ticketBreakdown.push(`${tickets.enfant} Enfant(s)`);
+            if (tickets.popcorn > 0) ticketBreakdown.push(`${tickets.popcorn} Popcorn`);
+
             const confirmationHTML = `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <h1 style="color: #000;">Réservation confirmée ! 🎟️</h1>
@@ -431,17 +438,22 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
                         <p><strong>Date:</strong> ${new Date(details.date).toLocaleDateString('fr-FR')}</p>
                         <p><strong>Heure:</strong> ${details.time}</p>
                         <p><strong>Salle:</strong> ${details.room}</p>
-                        <p><strong>Places:</strong> ${seats.join(', ')}</p>
-                        <p><strong>Total:</strong> ${total_price} FCFA</p>
+                        <p><strong>Billets:</strong> ${ticketBreakdown.join(' + ')}</p>
+                        <p><strong>Total:</strong> ${total_price.toLocaleString('fr-FR')} FCFA</p>
                     </div>
-                    <p>Annulation gratuite jusqu'à 25 min avant.</p>
+                    <p>Annulation gratuite jusqu'à 5 min avant.</p>
                 </div>
             `;
-            await sendEmail(details.email, `Confirmation - ${details.title}`, confirmationHTML);
+            try {
+                await sendEmail(details.email, `Confirmation - ${details.title}`, confirmationHTML);
+            } catch (e) {
+                console.log('Email sending failed, but booking created');
+            }
         }
 
         res.json({ id: bookingId, message: 'Booking created successfully' });
     } catch (error) {
+        console.error('Booking error:', error);
         res.status(500).json({ error: 'Failed to create booking' });
     }
 });

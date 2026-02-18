@@ -36,6 +36,7 @@
                 <a href="#experience">Expérience</a>
                 <a href="#contact">Contact</a>
                 <button class="btn-white" id="loginBtn" onclick="openLoginModal()">Connexion</button>
+                <button class="btn-black" id="registerBtn" onclick="openRegisterModal()">Créer un compte</button>
             </div>
             <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
                 <span></span><span></span><span></span>
@@ -66,7 +67,6 @@
                 <button class="btn-white"
                     onclick="document.getElementById('movies').scrollIntoView({behavior:'smooth'})">Voir les
                     films</button>
-                <button class="btn-black" onclick="openRegisterModal()">Créer un compte</button>
             </div>
         </div>
     </section>
@@ -282,54 +282,70 @@
                     <select id="bookingShowtime" onchange="loadSeats()"></select>
                 </div>
 
-                <!-- Types de billets -->
+                <!-- Types de billets avec compteurs -->
                 <div class="form-group">
-                    <label>Type de billet</label>
-                    <div class="ticket-types">
-                        <div class="ticket-type active" id="ticket-adulte" onclick="selectTicketType('adulte')">
-                            <div class="ticket-icon">🧑</div>
-                            <div class="ticket-label">Adulte</div>
-                            <div class="ticket-price" id="price-adulte">3 000 FCFA</div>
+                    <label>Nombre de billets par type</label>
+                    <div style="display:grid; gap:1rem;">
+                        <!-- Adulte -->
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:var(--black); border:1px solid var(--border-gray); padding:1rem;">
+                            <div>
+                                <div style="font-weight:700; margin-bottom:0.25rem;">🧑 Adulte</div>
+                                <div style="font-size:0.9rem; color:var(--text-gray);" id="price-adulte">3 000 FCFA
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <button type="button" onclick="changeTicketQty('adulte', -1)"
+                                    style="width:35px; height:35px; background:var(--black); border:1px solid var(--white); color:var(--white); font-size:1.2rem; cursor:pointer; font-weight:700;">−</button>
+                                <span id="qty-adulte"
+                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
+                                <button type="button" onclick="changeTicketQty('adulte', 1)"
+                                    style="width:35px; height:35px; background:var(--white); border:none; color:var(--black); font-size:1.2rem; cursor:pointer; font-weight:700;">+</button>
+                            </div>
                         </div>
-                        <div class="ticket-type" id="ticket-enfant" onclick="selectTicketType('enfant')">
-                            <div class="ticket-icon">👶</div>
-                            <div class="ticket-label">Enfant</div>
-                            <div class="ticket-price" id="price-enfant">2 000 FCFA</div>
+                        <!-- Enfant -->
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:var(--black); border:1px solid var(--border-gray); padding:1rem;">
+                            <div>
+                                <div style="font-weight:700; margin-bottom:0.25rem;">👶 Enfant</div>
+                                <div style="font-size:0.9rem; color:var(--text-gray);" id="price-enfant">2 000 FCFA
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <button type="button" onclick="changeTicketQty('enfant', -1)"
+                                    style="width:35px; height:35px; background:var(--black); border:1px solid var(--white); color:var(--white); font-size:1.2rem; cursor:pointer; font-weight:700;">−</button>
+                                <span id="qty-enfant"
+                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
+                                <button type="button" onclick="changeTicketQty('enfant', 1)"
+                                    style="width:35px; height:35px; background:var(--white); border:none; color:var(--black); font-size:1.2rem; cursor:pointer; font-weight:700;">+</button>
+                            </div>
                         </div>
-                        <div class="ticket-type" id="ticket-popcorn" onclick="selectTicketType('popcorn')">
-                            <div class="ticket-icon">🍿</div>
-                            <div class="ticket-label">+Popcorn</div>
-                            <div class="ticket-price" id="price-popcorn">4 000 FCFA</div>
+                        <!-- Popcorn -->
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:var(--black); border:1px solid var(--border-gray); padding:1rem;">
+                            <div>
+                                <div style="font-weight:700; margin-bottom:0.25rem;">🍿 Adulte + Popcorn</div>
+                                <div style="font-size:0.9rem; color:var(--text-gray);" id="price-popcorn">4 000 FCFA
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <button type="button" onclick="changeTicketQty('popcorn', -1)"
+                                    style="width:35px; height:35px; background:var(--black); border:1px solid var(--white); color:var(--white); font-size:1.2rem; cursor:pointer; font-weight:700;">−</button>
+                                <span id="qty-popcorn"
+                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
+                                <button type="button" onclick="changeTicketQty('popcorn', 1)"
+                                    style="width:35px; height:35px; background:var(--white); border:none; color:var(--black); font-size:1.2rem; cursor:pointer; font-weight:700;">+</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="screen-label">ÉCRAN</div>
-                <div class="screen"></div>
-                <div class="seats-grid" id="seatsGrid"></div>
-                <div class="seats-legend">
-                    <div class="legend-item">
-                        <div class="legend-dot"
-                            style="background:var(--light-gray); border:1px solid var(--border-gray)"></div>
-                        Disponible
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background:var(--white)"></div>
-                        Sélectionné
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background:#2a2a2a; opacity:0.5"></div>
-                        Occupé
-                    </div>
-                </div>
                 <div class="booking-summary">
-                    <div class="summary-item">
-                        <span>Places sélectionnées</span>
-                        <span id="selectedSeatsCount">0</span>
+                    <div id="ticketBreakdown" style="margin-bottom:1rem; font-size:0.9rem; color:var(--text-gray);">
                     </div>
                     <div class="summary-item">
-                        <span id="ticketTypeLabel">Type : Adulte</span>
-                        <span id="ticketUnitPrice">3 000 FCFA / place</span>
+                        <span>Total places</span>
+                        <span id="selectedSeatsCount">0</span>
                     </div>
                     <div class="summary-item summary-total">
                         <span>Total</span>

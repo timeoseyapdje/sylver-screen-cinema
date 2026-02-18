@@ -7,7 +7,7 @@ let selectedSeats = [];
 let currentMovie = null;
 let movies = [];
 let showtimes = [];
-let selectedTicketType = 'adulte';
+let ticketQuantities = { adulte: 0, enfant: 0, popcorn: 0 };
 let ticketPrices = { adulte: 3000, enfant: 2000, popcorn: 4000 };
 
 // ========== TOAST & DIALOG ==========
@@ -503,6 +503,7 @@ async function openBookingModal() {
         `<option value="${m.id}" ${m.id === currentMovie?.id ? 'selected' : ''}>${m.title}</option>`
     ).join('');
 
+    resetTicketQuantities();
     await updateShowtimes();
     openModal('bookingModal');
 }
@@ -526,14 +527,22 @@ function updatePriceDisplay() {
     if (document.getElementById('price-popcorn')) document.getElementById('price-popcorn').textContent = fmt(ticketPrices.popcorn);
 }
 
-function selectTicketType(type) {
-    selectedTicketType = type;
-    selectedSeats = [];
-    document.querySelectorAll('.ticket-type').forEach(el => el.classList.remove('active'));
-    document.getElementById(`ticket-${type}`).classList.add('active');
-    // Reset selected seats in grid
-    document.querySelectorAll('.seat.selected').forEach(s => s.classList.remove('selected'));
+function changeTicketQty(type, delta) {
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+    const maxSeats = 10; // Limite raisonnable
+
+    ticketQuantities[type] = Math.max(0, Math.min(maxSeats, ticketQuantities[type] + delta));
+
+    // Mettre à jour l'affichage
+    document.getElementById(`qty-${type}`).textContent = ticketQuantities[type];
     updateBookingSummary();
+}
+
+function resetTicketQuantities() {
+    ticketQuantities = { adulte: 0, enfant: 0, popcorn: 0 };
+    document.getElementById('qty-adulte').textContent = '0';
+    document.getElementById('qty-enfant').textContent = '0';
+    document.getElementById('qty-popcorn').textContent = '0';
 }
 
 async function updateShowtimes() {
@@ -601,25 +610,42 @@ function toggleSeat(n) {
 }
 
 function updateBookingSummary() {
-    const price = ticketPrices[selectedTicketType] || 3000;
-    const labels = { adulte: 'Adulte', enfant: 'Enfant (-12 ans)', popcorn: 'Adulte + Popcorn 🍿' };
-    const total = selectedSeats.length * price;
-    document.getElementById('selectedSeatsCount').textContent = selectedSeats.length;
-    document.getElementById('ticketTypeLabel').textContent = `Type : ${labels[selectedTicketType]}`;
-    document.getElementById('ticketUnitPrice').textContent = price.toLocaleString('fr-FR') + ' FCFA / place';
-    document.getElementById('totalPrice').textContent = total.toLocaleString('fr-FR') + ' FCFA';
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+    const totalPrice =
+        (ticketQuantities.adulte * ticketPrices.adulte) +
+        (ticketQuantities.enfant * ticketPrices.enfant) +
+        (ticketQuantities.popcorn * ticketPrices.popcorn);
+
+    document.getElementById('selectedSeatsCount').textContent = totalTickets;
+    document.getElementById('totalPrice').textContent = totalPrice.toLocaleString('fr-FR') + ' FCFA';
+
+    // Détail des billets
+    const breakdown = [];
+    if (ticketQuantities.adulte > 0) breakdown.push(`${ticketQuantities.adulte} Adulte${ticketQuantities.adulte > 1 ? 's' : ''}`);
+    if (ticketQuantities.enfant > 0) breakdown.push(`${ticketQuantities.enfant} Enfant${ticketQuantities.enfant > 1 ? 's' : ''}`);
+    if (ticketQuantities.popcorn > 0) breakdown.push(`${ticketQuantities.popcorn} Popcorn`);
+
+    document.getElementById('ticketBreakdown').textContent = breakdown.length > 0 ? breakdown.join(' · ') : 'Aucun billet sélectionné';
 }
 
 async function confirmBooking() {
-    if (selectedSeats.length === 0) {
-        showToast('Veuillez sélectionner au moins une place', 'error');
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
+
+    if (totalTickets === 0) {
+        showToast('Sélectionnez au moins un billet', 'error');
         return;
     }
 
     const showtimeId = parseInt(document.getElementById('bookingShowtime').value);
-    const price = ticketPrices[selectedTicketType] || 3000;
-    const totalPrice = selectedSeats.length * price;
-    const labels = { adulte: 'Adulte', enfant: 'Enfant', popcorn: 'Adulte + Popcorn 🍿' };
+    const totalPrice =
+        (ticketQuantities.adulte * ticketPrices.adulte) +
+        (ticketQuantities.enfant * ticketPrices.enfant) +
+        (ticketQuantities.popcorn * ticketPrices.popcorn);
+
+    const btn = document.querySelector('#bookingModal button[onclick="confirmBooking()"]');
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Réservation...';
 
     try {
         const response = await fetch(`${API_URL}/bookings`, {
@@ -627,24 +653,31 @@ async function confirmBooking() {
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
             body: JSON.stringify({
                 showtime_id: showtimeId,
-                seats: selectedSeats,
-                total_price: totalPrice,
-                ticket_type: selectedTicketType
+                tickets: ticketQuantities,
+                total_price: totalPrice
             })
         });
 
         const data = await response.json();
 
         if (response.ok) {
-            const seatsStr = selectedSeats.join(', ');
             closeModal('bookingModal');
-            selectedSeats = [];
-            showToast(`Réservation confirmée ! Places ${seatsStr} · ${totalPrice.toLocaleString('fr-FR')} FCFA`);
+            resetTicketQuantities();
+
+            const breakdown = [];
+            if (ticketQuantities.adulte > 0) breakdown.push(`${ticketQuantities.adulte} Adulte`);
+            if (ticketQuantities.enfant > 0) breakdown.push(`${ticketQuantities.enfant} Enfant`);
+            if (ticketQuantities.popcorn > 0) breakdown.push(`${ticketQuantities.popcorn} Popcorn`);
+
+            showToast(`✅ Réservation confirmée ! ${breakdown.join(' + ')} · ${totalPrice.toLocaleString('fr-FR')} FCFA`);
         } else {
             showToast(data.error || 'Erreur lors de la réservation', 'error');
         }
     } catch (error) {
         showToast('Erreur de connexion', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
     }
 }
 
