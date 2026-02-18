@@ -7,11 +7,11 @@ let showtimes = [];
 let allShowtimes = [];
 
 // Initialize
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', async function () {
     checkAdminAuth();
     loadStats();
-    loadMovies();
-    loadAllShowtimes();
+    await loadMovies(); // Attendre que les films soient chargés
+    loadAllShowtimes(); // Ensuite charger les séances
     loadBookings();
     loadUsers();
     loadPrices();
@@ -245,14 +245,17 @@ async function loadAllShowtimes() {
     try {
         // Load showtimes for all movies
         allShowtimes = [];
+        console.log('📅 Loading showtimes for', movies.length, 'movies');
         for (const movie of movies) {
-            const response = await fetch(`${API_URL}/movies/${movie.id}/showtimes`);
+            const response = await fetch(`${API_URL}/movies/${movie.id}/showtimes?all=true`);
             const movieShowtimes = await response.json();
+            console.log(`  ${movie.title}:`, movieShowtimes.length, 'showtimes');
             allShowtimes = [...allShowtimes, ...movieShowtimes.map(st => ({
                 ...st,
                 movie_title: movie.title
             }))];
         }
+        console.log('✅ Total showtimes loaded:', allShowtimes.length);
         displayShowtimesTable(allShowtimes);
     } catch (error) {
         console.error('Load showtimes error:', error);
@@ -261,6 +264,11 @@ async function loadAllShowtimes() {
 
 function displayShowtimesTable(showtimesData) {
     const tbody = document.querySelector('#showtimesTable tbody');
+    if (!showtimesData || showtimesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune séance</td></tr>';
+        return;
+    }
+
     tbody.innerHTML = showtimesData.map(st => `
         <tr>
             <td>${st.id}</td>
@@ -290,7 +298,7 @@ function openAddShowtimeModal() {
     document.getElementById('showtimeTime').value = '';
     document.getElementById('showtimeRoom').value = 'Salle 1';
     document.getElementById('showtimePrice').value = '3000';
-    document.getElementById('showtimeSeats').value = '150';
+    document.getElementById('showtimeSeats').value = '60';
 
     openModal('showtimeFormModal');
 }
@@ -382,6 +390,8 @@ async function loadBookings() {
         });
 
         const bookings = await response.json();
+        console.log('📊 Admin bookings loaded:', bookings.length);
+        console.log('Sample booking:', bookings[0]);
         displayBookingsTable(bookings);
     } catch (error) {
         console.error('Load bookings error:', error);
@@ -390,18 +400,32 @@ async function loadBookings() {
 
 function displayBookingsTable(bookingsData) {
     const tbody = document.querySelector('#bookingsTable tbody');
-    tbody.innerHTML = bookingsData.map(booking => `
-        <tr>
-            <td>${booking.id}</td>
-            <td>${booking.user_name}<br><small>${booking.email}</small></td>
-            <td>${booking.movie_title}</td>
-            <td>${booking.date} ${booking.time}<br><small>${booking.room}</small></td>
-            <td>${JSON.parse(booking.seats).join(', ')}</td>
-            <td>${booking.total_price} FCFA</td>
-            <td>${booking.status === 'confirmed' ? 'Confirmé' : 'Annulé'}</td>
-            <td>${new Date(booking.booking_time).toLocaleString('fr-FR')}</td>
-        </tr>
-    `).join('');
+    if (!bookingsData || bookingsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune réservation</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = bookingsData.map(booking => {
+        let bookingDate = 'N/A';
+        try {
+            bookingDate = new Date(booking.booking_time).toLocaleString('fr-FR');
+        } catch (e) {
+            bookingDate = booking.booking_time;
+        }
+
+        return `
+            <tr>
+                <td>${booking.id}</td>
+                <td>${booking.user_name}<br><small>${booking.email}</small></td>
+                <td>${booking.title}</td>
+                <td>${booking.date} ${booking.time}<br><small>${booking.room}</small></td>
+                <td>${booking.seats}</td>
+                <td>${parseInt(booking.total_price).toLocaleString('fr-FR')} FCFA</td>
+                <td>${booking.status === 'confirmed' ? '✅ Confirmé' : '❌ Annulé'}</td>
+                <td>${bookingDate}</td>
+            </tr>
+        `;
+    }).join('');
 }
 
 // ========== USERS ==========

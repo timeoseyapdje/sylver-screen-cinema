@@ -350,12 +350,15 @@ app.delete('/api/movies/:id', authenticateToken, isAdmin, async (req, res) => {
 
 app.get('/api/movies/:id/showtimes', async (req, res) => {
     try {
-        const result = await pool.query(
-            'SELECT * FROM showtimes WHERE movie_id = $1 AND date >= CURRENT_DATE ORDER BY date, time',
-            [req.params.id]
-        );
+        const showAll = req.query.all === 'true'; // Pour l'admin
+        const query = showAll
+            ? 'SELECT * FROM showtimes WHERE movie_id = $1 ORDER BY date DESC, time'
+            : 'SELECT * FROM showtimes WHERE movie_id = $1 AND date >= CURRENT_DATE ORDER BY date, time';
+
+        const result = await pool.query(query, [req.params.id]);
         res.json(result.rows);
     } catch (error) {
+        console.error('Showtimes fetch error:', error);
         res.status(500).json({ error: 'Failed to fetch showtimes' });
     }
 });
