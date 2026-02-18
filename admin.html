@@ -15,6 +15,8 @@
     <header>
         <nav>
             <div class="logo-container">
+                <img src="https://scontent.fdla1-2.fna.fbcdn.net/v/t39.30808-6/269831466_111303771356673_5960726783398060464_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=dQ8YE_wJ7gkQ7kNvgELWKbN&_nc_zt=23&_nc_ht=scontent.fdla1-2.fna&_nc_gid=AtvV-N9mGLdWqCdj8B4rg-r&oh=00_AYAAC5WRXFnKbPrC8LNbXBqUU3kd7IQRr-IqHJzk_aNj7w&oe=67628E83"
+                    alt="Sylver Screen" class="logo-img">
                 <div class="logo-text">SYLVER SCREEN</div>
             </div>
             <div class="nav-links">
@@ -56,6 +58,7 @@
             <button class="tab" onclick="switchTab('showtimes')">Séances</button>
             <button class="tab" onclick="switchTab('bookings')">Réservations</button>
             <button class="tab" onclick="switchTab('users')">Utilisateurs</button>
+            <button class="tab" onclick="switchTab('newsletter')">Newsletter</button>
         </div>
 
         <!-- Movies Tab -->
@@ -186,6 +189,26 @@
                 </div>
                 <button class="btn-white" onclick="savePrices()" style="padding:0.9rem 2.5rem;">Enregistrer les
                     tarifs</button>
+            </div>
+        </div>
+
+        <!-- Newsletter Tab -->
+        <div id="newsletterTab" class="tab-content">
+            <div class="admin-section">
+                <h2>📧 NEWSLETTER</h2>
+                <p style="color:#999; margin-bottom:1.5rem; font-size:0.9rem;"><span id="newsletterCount">0</span>
+                    abonné(s) à la newsletter</p>
+                <table id="newsletterTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Date d'inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
         </div>
     </div>

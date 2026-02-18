@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', async function () {
     loadBookings();
     loadUsers();
     loadPrices();
+    loadNewsletter();
 
     // Auto-refresh toutes les 30 secondes
     setInterval(() => {
@@ -632,6 +633,63 @@ async function savePrices() {
     } catch (e) {
         showToast('Erreur de connexion', 'error');
     }
+}
+
+// ========== NEWSLETTER ==========
+
+async function loadNewsletter() {
+    try {
+        const response = await fetch(`${API_URL}/admin/newsletter`, {
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        const subscribers = await response.json();
+        console.log('📧 Newsletter subscribers:', subscribers.length);
+
+        document.getElementById('newsletterCount').textContent = subscribers.length;
+        displayNewsletterTable(subscribers);
+    } catch (error) {
+        console.error('Load newsletter error:', error);
+    }
+}
+
+function displayNewsletterTable(subscribers) {
+    const tbody = document.querySelector('#newsletterTable tbody');
+    if (!subscribers || subscribers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:2rem; color:#999;">Aucun abonné</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = subscribers.map(sub => `
+        <tr>
+            <td>${sub.id}</td>
+            <td>${sub.email}</td>
+            <td>${new Date(sub.subscribed_at).toLocaleString('fr-FR')}</td>
+            <td>
+                <button class="btn-delete" onclick="deleteNewsletterSubscriber(${sub.id})">Supprimer</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function deleteNewsletterSubscriber(id) {
+    showConfirmDialog('Supprimer cet abonné ?', async () => {
+        try {
+            const response = await fetch(`${API_URL}/admin/newsletter/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+
+            if (response.ok) {
+                showToast('Abonné supprimé');
+                loadNewsletter();
+            } else {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        } catch (e) {
+            showToast('Erreur de connexion', 'error');
+        }
+    });
 }
 
 // Close modal on outside click

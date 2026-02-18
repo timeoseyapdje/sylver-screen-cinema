@@ -622,6 +622,28 @@ app.post('/api/newsletter/subscribe', async (req, res) => {
     }
 });
 
+// Admin: Get newsletter subscribers
+app.get('/api/admin/newsletter', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM newsletter ORDER BY subscribed_at DESC');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Newsletter fetch error:', error);
+        res.status(500).json({ error: 'Failed to fetch subscribers' });
+    }
+});
+
+// Admin: Delete newsletter subscriber
+app.delete('/api/admin/newsletter/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM newsletter WHERE id = $1', [req.params.id]);
+        res.json({ message: 'Subscriber deleted' });
+    } catch (error) {
+        console.error('Delete subscriber error:', error);
+        res.status(500).json({ error: 'Failed to delete subscriber' });
+    }
+});
+
 // ========== ADMIN ROUTES ==========
 
 app.get('/api/admin/users', authenticateToken, isAdmin, async (req, res) => {
