@@ -206,13 +206,19 @@ async function loadUserBookings() {
         const now = new Date();
 
         const futureBookings = bookings.filter(b => {
-            // Extraire la date string (YYYY-MM-DD)
-            const dateStr = b.date.split('T')[0];
-            const showtime = new Date(`${dateStr}T${b.time}`);
-            const isFuture = showtime > now;
-            const isConfirmed = b.status === 'confirmed';
-            console.log(`  Booking ${b.id}: ${dateStr} ${b.time} → ${isFuture ? 'Future' : 'Past'}, ${isConfirmed ? 'Confirmed' : 'Cancelled'}`);
-            return isFuture && isConfirmed;
+            try {
+                // Extraire la date string (YYYY-MM-DD)
+                const dateStr = typeof b.date === 'string' ? b.date.split('T')[0] : b.date;
+                const timeStr = typeof b.time === 'string' ? b.time.substring(0, 8) : b.time;
+                const showtime = new Date(`${dateStr}T${timeStr}`);
+                const isFuture = showtime > now;
+                const isConfirmed = b.status === 'confirmed';
+                console.log(`  Booking ${b.id}: ${dateStr} ${timeStr} → ${isFuture ? 'Future' : 'Past'}, ${isConfirmed ? 'Confirmed' : 'Cancelled'}`);
+                return isFuture && isConfirmed;
+            } catch (error) {
+                console.error('Error parsing booking:', b.id, error);
+                return false;
+            }
         });
 
         console.log('Future bookings:', futureBookings.length);
@@ -223,7 +229,8 @@ async function loadUserBookings() {
         }
 
         container.innerHTML = futureBookings.map(b => {
-            const dateStr = b.date.split('T')[0];
+            const dateStr = typeof b.date === 'string' ? b.date.split('T')[0] : b.date;
+            const timeStr = typeof b.time === 'string' ? b.time.substring(0, 5) : b.time;
             const showtime = new Date(`${dateStr}T${b.time}`);
             const minutesUntil = (showtime - now) / 60000;
             const canCancel = minutesUntil > 5;
@@ -232,7 +239,7 @@ async function loadUserBookings() {
                 <div style="background:var(--black); border:1px solid var(--border-gray); padding:1.25rem; margin-bottom:1rem;">
                     <div style="margin-bottom:1rem;">
                         <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">${b.title}</h4>
-                        <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">📅 ${new Date(dateStr).toLocaleDateString('fr-FR')} à ${b.time.substring(0, 5)}</p>
+                        <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">📅 ${new Date(dateStr).toLocaleDateString('fr-FR')} à ${timeStr}</p>
                         <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">🪑 Places : ${b.seats}</p>
                         <p style="font-size:1.1rem; font-weight:700; margin-top:0.5rem;">${parseInt(b.total_price).toLocaleString('fr-FR')} FCFA</p>
                     </div>
@@ -245,7 +252,12 @@ async function loadUserBookings() {
         }).join('');
     } catch (e) {
         console.error('Load bookings error:', e);
-        container.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:2rem;">Erreur de chargement. Vérifiez la console.</p>';
+        container.innerHTML = `
+            <div style="text-align:center; padding:2rem;">
+                <p style="color:var(--text-gray); margin-bottom:1rem;">Erreur de chargement des réservations</p>
+                <button class="btn-white" onclick="loadUserBookings()">Réessayer</button>
+            </div>
+        `;
     }
 }
 
@@ -638,8 +650,8 @@ async function updateShowtimes() {
         const select = document.getElementById('bookingShowtime');
 
         if (showtimes.length === 0) {
-            select.innerHTML = '<option>Aucune séance disponible</option>';
-            document.getElementById('seatsGrid').innerHTML = '';
+            select.innerHTML = '<option>Aucune séance disponible (réservations closes 30 min avant)</option>';
+            document.getElementById('seatsGrid').innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:2rem;">Les réservations se ferment 30 minutes avant chaque séance.</p>';
             return;
         }
 

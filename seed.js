@@ -194,24 +194,34 @@ async function seed() {
         const movieIds = movieResult.rows.map(r => r.id);
         let count = 0;
 
+        // Calculer le nombre de jours jusqu'à lundi prochain
+        const daysUntilNextMonday = (1 + 7 - now.getDay()) % 7 || 7;
+
+        console.log(`   📅 Création des séances jusqu'au ${new Date(now.getTime() + daysUntilNextMonday * 24 * 60 * 60 * 1000).toISOString().split('T')[0]}`);
+
         for (const movieId of movieIds) {
-            // Séances aujourd'hui + demain seulement
-            for (let d = 0; d < 2; d++) {
+            // Séances jusqu'à lundi prochain inclus
+            for (let d = 0; d <= daysUntilNextMonday; d++) {
                 const date = new Date();
                 date.setDate(date.getDate() + d);
                 const dateStr = date.toISOString().split('T')[0];
 
-                // Si c'est aujourd'hui, filtrer les horaires déjà passés
+                // Si c'est aujourd'hui, filtrer les horaires < maintenant + 30min
                 let availableSlots = [...slots];
                 if (d === 0) {
+                    const nowMinutes = now.getHours() * 60 + now.getMinutes();
                     availableSlots = slots.filter(slot => {
-                        const hour = parseInt(slot.time.split(':')[0]);
-                        return hour > currentHour + 1; // Au moins 1h dans le futur
+                        const [hour, min] = slot.time.split(':').map(Number);
+                        const slotMinutes = hour * 60 + min;
+                        return slotMinutes > nowMinutes + 30; // Au moins 30min dans le futur
                     });
                 }
 
-                // 2 séances par jour
-                const daySlots = availableSlots.sort(() => Math.random() - 0.5).slice(0, Math.min(2, availableSlots.length));
+                // 2-3 séances par jour selon le jour
+                const numSlots = d === 0 ? Math.min(2, availableSlots.length) :
+                    (d >= 5 ? 3 : 2); // Plus de séances le weekend
+                const daySlots = availableSlots.sort(() => Math.random() - 0.5).slice(0, numSlots);
+
                 for (const slot of daySlots) {
                     const available = 60 - Math.floor(Math.random() * 10);
 
@@ -232,7 +242,7 @@ async function seed() {
                 }
             }
         }
-        console.log(`   ✓ ${count} séances créées`);
+        console.log(`   ✓ ${count} séances créées (jusqu'au lundi ${new Date(now.getTime() + daysUntilNextMonday * 24 * 60 * 60 * 1000).toISOString().split('T')[0]})`);
 
         // 3. Utilisateurs test
         console.log('\n👥 Utilisateurs de test...');

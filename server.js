@@ -353,9 +353,18 @@ app.get('/api/movies/:id/showtimes', async (req, res) => {
         const showAll = req.query.all === 'true'; // Pour l'admin
         const query = showAll
             ? 'SELECT * FROM showtimes WHERE movie_id = $1 ORDER BY date DESC, time'
-            : 'SELECT * FROM showtimes WHERE movie_id = $1 AND date >= CURRENT_DATE ORDER BY date, time';
+            : `SELECT * FROM showtimes 
+               WHERE movie_id = $1 
+               AND (date::timestamp + time::time) > NOW() + INTERVAL '30 minutes'
+               ORDER BY date, time`;
 
         const result = await pool.query(query, [req.params.id]);
+
+        // Log pour debug
+        if (!showAll) {
+            console.log(`📅 Showtimes for movie ${req.params.id}: ${result.rows.length} available (30min+ from now)`);
+        }
+
         res.json(result.rows);
     } catch (error) {
         console.error('Showtimes fetch error:', error);
