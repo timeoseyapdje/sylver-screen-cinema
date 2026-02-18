@@ -195,8 +195,13 @@ async function loadUserBookings() {
         const now = new Date();
 
         const futureBookings = bookings.filter(b => {
-            const showtime = new Date(`${b.date}T${b.time}`);
-            return showtime > now && b.status === 'confirmed';
+            // Extraire la date string (YYYY-MM-DD)
+            const dateStr = b.date.split('T')[0];
+            const showtime = new Date(`${dateStr}T${b.time}`);
+            const isFuture = showtime > now;
+            const isConfirmed = b.status === 'confirmed';
+            console.log(`  Booking ${b.id}: ${dateStr} ${b.time} → ${isFuture ? 'Future' : 'Past'}, ${isConfirmed ? 'Confirmed' : 'Cancelled'}`);
+            return isFuture && isConfirmed;
         });
 
         console.log('Future bookings:', futureBookings.length);
@@ -207,7 +212,8 @@ async function loadUserBookings() {
         }
 
         container.innerHTML = futureBookings.map(b => {
-            const showtime = new Date(`${b.date}T${b.time}`);
+            const dateStr = b.date.split('T')[0];
+            const showtime = new Date(`${dateStr}T${b.time}`);
             const minutesUntil = (showtime - now) / 60000;
             const canCancel = minutesUntil > 5;
 
@@ -215,7 +221,7 @@ async function loadUserBookings() {
                 <div style="background:var(--black); border:1px solid var(--border-gray); padding:1.25rem; margin-bottom:1rem;">
                     <div style="margin-bottom:1rem;">
                         <h4 style="font-size:1.05rem; font-weight:700; margin-bottom:0.5rem;">${b.title}</h4>
-                        <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">📅 ${new Date(b.date).toLocaleDateString('fr-FR')} à ${b.time}</p>
+                        <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">📅 ${new Date(dateStr).toLocaleDateString('fr-FR')} à ${b.time.substring(0, 5)}</p>
                         <p style="color:var(--text-gray); font-size:0.85rem; margin-bottom:0.25rem;">🪑 Places : ${b.seats}</p>
                         <p style="font-size:1.1rem; font-weight:700; margin-top:0.5rem;">${parseInt(b.total_price).toLocaleString('fr-FR')} FCFA</p>
                     </div>
