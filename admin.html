@@ -70,6 +70,7 @@
                     <thead>
                         <tr>
                             <th>ID</th>
+                            <th>Poster</th>
                             <th>Titre</th>
                             <th>Genre</th>
                             <th>Durée</th>
@@ -91,6 +92,8 @@
                 <div class="section-actions">
                     <button class="btn-white" onclick="openAddShowtimeModal()">+ Ajouter une séance</button>
                 </div>
+
+                <h3 style="margin-bottom:1rem;">📅 Séances à venir</h3>
                 <table id="showtimesTable">
                     <thead>
                         <tr>
@@ -106,6 +109,32 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+
+                <!-- Archives séances passées -->
+                <div style="margin-top:2rem; border-top:1px solid var(--border-gray); padding-top:1rem;">
+                    <button onclick="toggleArchive('pastShowtimes')"
+                        style="background:transparent; border:1px solid #444; color:#999; padding:0.75rem 1.5rem; cursor:pointer; width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; font-family:Montserrat,sans-serif;">
+                        <span>📁 Séances passées (<span id="pastShowtimesCount">0</span>) · Revenus : <span
+                                id="pastShowtimesRevenue">0</span> FCFA</span>
+                        <span id="pastShowtimesIcon">▼</span>
+                    </button>
+                    <div id="pastShowtimesArchive" style="display:none; margin-top:1rem;">
+                        <table id="pastShowtimesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Film</th>
+                                    <th>Date</th>
+                                    <th>Heure</th>
+                                    <th>Salle</th>
+                                    <th>Places vendues</th>
+                                    <th>Revenus</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -113,6 +142,8 @@
         <div id="bookingsTab" class="tab-content">
             <div class="admin-section">
                 <h2>RÉSERVATIONS</h2>
+
+                <h3 style="margin-bottom:1rem;">🎟️ Réservations actives</h3>
                 <table id="bookingsTable">
                     <thead>
                         <tr>
@@ -129,6 +160,33 @@
                     </thead>
                     <tbody></tbody>
                 </table>
+
+                <!-- Archives réservations passées/annulées -->
+                <div style="margin-top:2rem; border-top:1px solid var(--border-gray); padding-top:1rem;">
+                    <button onclick="toggleArchive('pastBookings')"
+                        style="background:transparent; border:1px solid #444; color:#999; padding:0.75rem 1.5rem; cursor:pointer; width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; font-family:Montserrat,sans-serif;">
+                        <span>📁 Historique (passées + annulées) (<span id="pastBookingsCount">0</span>) · Revenus :
+                            <span id="pastBookingsRevenue">0</span> FCFA</span>
+                        <span id="pastBookingsIcon">▼</span>
+                    </button>
+                    <div id="pastBookingsArchive" style="display:none; margin-top:1rem;">
+                        <table id="pastBookingsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Utilisateur</th>
+                                    <th>Film</th>
+                                    <th>Date/Heure</th>
+                                    <th>Places</th>
+                                    <th>Total</th>
+                                    <th>Statut</th>
+                                    <th>Date réservation</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 

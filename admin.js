@@ -149,6 +149,19 @@ function switchTab(tabName) {
     document.getElementById(tabName + 'Tab').classList.add('active');
 }
 
+function toggleArchive(archiveId) {
+    const archive = document.getElementById(archiveId + 'Archive');
+    const icon = document.getElementById(archiveId + 'Icon');
+
+    if (archive.style.display === 'none') {
+        archive.style.display = 'block';
+        icon.textContent = '▲';
+    } else {
+        archive.style.display = 'none';
+        icon.textContent = '▼';
+    }
+}
+
 // ========== MOVIES ==========
 
 function previewPoster(input) {
@@ -186,21 +199,28 @@ async function loadMovies() {
 
 function displayMoviesTable(moviesData) {
     const tbody = document.querySelector('#moviesTable tbody');
-    tbody.innerHTML = moviesData.map(movie => `
-        <tr>
-            <td>${movie.id}</td>
-            <td>${movie.title}</td>
-            <td>${movie.genre}</td>
-            <td>${movie.duration} min</td>
-            <td>${movie.rating.toFixed(1)} (${movie.votes_count})</td>
-            <td>${movie.release_date || '-'}</td>
-            <td>${movie.is_active ? 'Actif' : 'Inactif'}</td>
-            <td>
-                <button class="btn-edit" onclick="editMovie(${movie.id})">Modifier</button>
-                <button class="btn-delete" onclick="deleteMovie(${movie.id})">Supprimer</button>
-            </td>
-        </tr>
-    `).join('');
+    tbody.innerHTML = moviesData.map(movie => {
+        const posterImg = movie.poster_url
+            ? `<img src="${movie.poster_url}" style="width:50px; height:75px; object-fit:cover; border:1px solid #333;">`
+            : '<span style="color:#666;">-</span>';
+
+        return `
+            <tr>
+                <td>${movie.id}</td>
+                <td>${posterImg}</td>
+                <td>${movie.title}</td>
+                <td>${movie.genre}</td>
+                <td>${movie.duration} min</td>
+                <td>${movie.rating.toFixed(1)} (${movie.votes_count})</td>
+                <td>${movie.release_date || '-'}</td>
+                <td>${movie.is_active ? 'Actif' : 'Inactif'}</td>
+                <td>
+                    <button class="btn-edit" onclick="editMovie(${movie.id})">Modifier</button>
+                    <button class="btn-delete" onclick="deleteMovie(${movie.id})">Supprimer</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
 }
 
 function openAddMovieModal() {
@@ -332,27 +352,74 @@ async function loadAllShowtimes() {
 }
 
 function displayShowtimesTable(showtimesData) {
+    const now = new Date();
+
+    // Séparer futures et passées
+    const future = [];
+    const past = [];
+
+    showtimesData.forEach(st => {
+        const showtimeDate = new Date(`${st.date}T${st.time}`);
+        if (showtimeDate > now) {
+            future.push(st);
+        } else {
+            past.push(st);
+        }
+    });
+
+    // Afficher séances futures
     const tbody = document.querySelector('#showtimesTable tbody');
-    if (!showtimesData || showtimesData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune séance</td></tr>';
-        return;
+    if (future.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune séance à venir</td></tr>';
+    } else {
+        tbody.innerHTML = future.map(st => `
+            <tr>
+                <td>${st.id}</td>
+                <td>${st.movie_title || 'Film #' + st.movie_id}</td>
+                <td>${st.date}</td>
+                <td>${st.time}</td>
+                <td>${st.room}</td>
+                <td>${st.price} FCFA</td>
+                <td>${st.available_seats}/${st.total_seats}</td>
+                <td>
+                    <button class="btn-edit" onclick="editShowtime(${st.id})">Modifier</button>
+                    <button class="btn-delete" onclick="deleteShowtime(${st.id})">Supprimer</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
-    tbody.innerHTML = showtimesData.map(st => `
-        <tr>
-            <td>${st.id}</td>
-            <td>${st.movie_title || 'Film #' + st.movie_id}</td>
-            <td>${st.date}</td>
-            <td>${st.time}</td>
-            <td>${st.room}</td>
-            <td>${st.price} FCFA</td>
-            <td>${st.available_seats}/${st.total_seats}</td>
-            <td>
-                <button class="btn-edit" onclick="editShowtime(${st.id})">Modifier</button>
-                <button class="btn-delete" onclick="deleteShowtime(${st.id})">Supprimer</button>
-            </td>
-        </tr>
-    `).join('');
+    // Calculer revenus totaux des séances passées
+    let totalRevenue = 0;
+    past.forEach(st => {
+        const sold = st.total_seats - st.available_seats;
+        totalRevenue += sold * st.price;
+    });
+
+    // Afficher séances passées dans archive
+    const pastTbody = document.querySelector('#pastShowtimesTable tbody');
+    document.getElementById('pastShowtimesCount').textContent = past.length;
+    document.getElementById('pastShowtimesRevenue').textContent = totalRevenue.toLocaleString('fr-FR');
+
+    if (past.length === 0) {
+        pastTbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:2rem; color:#999;">Aucune séance passée</td></tr>';
+    } else {
+        pastTbody.innerHTML = past.map(st => {
+            const sold = st.total_seats - st.available_seats;
+            const revenue = sold * st.price;
+            return `
+                <tr style="opacity:0.7;">
+                    <td>${st.id}</td>
+                    <td>${st.movie_title || 'Film #' + st.movie_id}</td>
+                    <td>${st.date}</td>
+                    <td>${st.time}</td>
+                    <td>${st.room}</td>
+                    <td>${sold} / ${st.total_seats}</td>
+                    <td style="font-weight:700;">${revenue.toLocaleString('fr-FR')} FCFA</td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 function openAddShowtimeModal() {
@@ -468,36 +535,96 @@ async function loadBookings() {
 }
 
 function displayBookingsTable(bookingsData) {
+    const now = new Date();
+
+    // Séparer actives (futures + confirmées) et archives (passées ou annulées)
+    const active = [];
+    const archived = [];
+
+    bookingsData.forEach(booking => {
+        const showtimeDate = new Date(`${booking.date}T${booking.time}`);
+        const isFuture = showtimeDate > now;
+        const isConfirmed = booking.status === 'confirmed';
+
+        if (isFuture && isConfirmed) {
+            active.push(booking);
+        } else {
+            archived.push(booking);
+        }
+    });
+
+    // Afficher réservations actives
     const tbody = document.querySelector('#bookingsTable tbody');
-    if (!bookingsData || bookingsData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Aucune réservation</td></tr>';
-        return;
+    if (active.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Aucune réservation active</td></tr>';
+    } else {
+        tbody.innerHTML = active.map(booking => {
+            let bookingDate = 'N/A';
+            try {
+                bookingDate = new Date(booking.booking_time).toLocaleString('fr-FR');
+            } catch (e) {
+                bookingDate = booking.booking_time;
+            }
+
+            return `
+                <tr>
+                    <td>${booking.id}</td>
+                    <td>${booking.user_name}<br><small>${booking.email}</small></td>
+                    <td>${booking.title}</td>
+                    <td>${booking.date} ${booking.time}<br><small>${booking.room}</small></td>
+                    <td>${booking.seats}</td>
+                    <td>${parseInt(booking.total_price).toLocaleString('fr-FR')} FCFA</td>
+                    <td>✅ Confirmé</td>
+                    <td>${bookingDate}</td>
+                    <td>
+                        <button class="btn-delete" onclick="deleteBooking(${booking.id})">Supprimer</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
 
-    tbody.innerHTML = bookingsData.map(booking => {
-        let bookingDate = 'N/A';
-        try {
-            bookingDate = new Date(booking.booking_time).toLocaleString('fr-FR');
-        } catch (e) {
-            bookingDate = booking.booking_time;
+    // Calculer revenus totaux des réservations passées confirmées
+    let totalRevenue = 0;
+    archived.forEach(booking => {
+        if (booking.status === 'confirmed') {
+            totalRevenue += parseInt(booking.total_price);
         }
+    });
 
-        return `
-            <tr>
-                <td>${booking.id}</td>
-                <td>${booking.user_name}<br><small>${booking.email}</small></td>
-                <td>${booking.title}</td>
-                <td>${booking.date} ${booking.time}<br><small>${booking.room}</small></td>
-                <td>${booking.seats}</td>
-                <td>${parseInt(booking.total_price).toLocaleString('fr-FR')} FCFA</td>
-                <td>${booking.status === 'confirmed' ? '✅ Confirmé' : '❌ Annulé'}</td>
-                <td>${bookingDate}</td>
-                <td>
-                    <button class="btn-delete" onclick="deleteBooking(${booking.id})">Supprimer</button>
-                </td>
-            </tr>
-        `;
-    }).join('');
+    // Afficher archives (passées + annulées)
+    const pastTbody = document.querySelector('#pastBookingsTable tbody');
+    document.getElementById('pastBookingsCount').textContent = archived.length;
+    document.getElementById('pastBookingsRevenue').textContent = totalRevenue.toLocaleString('fr-FR');
+
+    if (archived.length === 0) {
+        pastTbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune réservation archivée</td></tr>';
+    } else {
+        pastTbody.innerHTML = archived.map(booking => {
+            let bookingDate = 'N/A';
+            try {
+                bookingDate = new Date(booking.booking_time).toLocaleString('fr-FR');
+            } catch (e) {
+                bookingDate = booking.booking_time;
+            }
+
+            const statusIcon = booking.status === 'confirmed' ? '✅' : '❌';
+            const statusText = booking.status === 'confirmed' ? 'Confirmé' : 'Annulé';
+
+            return `
+                <tr style="opacity:0.6;">
+                    <td>${booking.id}</td>
+                    <td>${booking.user_name}<br><small>${booking.email}</small></td>
+                    <td>${booking.title}</td>
+                    <td>${booking.date} ${booking.time}<br><small>${booking.room}</small></td>
+                    <td>${booking.seats}</td>
+                    <td>${parseInt(booking.total_price).toLocaleString('fr-FR')} FCFA</td>
+                    <td>${statusIcon} ${statusText}</td>
+                    <td>${bookingDate}</td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 async function deleteBooking(bookingId) {
