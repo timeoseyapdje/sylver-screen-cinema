@@ -6,6 +6,73 @@ let movies = [];
 let showtimes = [];
 let allShowtimes = [];
 
+// ========== TOAST & DIALOG ==========
+
+function showToast(message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 2rem;
+        right: 2rem;
+        background: ${type === 'error' ? '#dc2626' : '#fff'};
+        color: ${type === 'error' ? '#fff' : '#000'};
+        padding: 1rem 1.5rem;
+        border-radius: 4px;
+        font-family: Montserrat, sans-serif;
+        font-size: 0.9rem;
+        font-weight: 600;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        z-index: 10000;
+        max-width: 400px;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => toast.remove(), 3500);
+}
+
+function showConfirmDialog(message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.95);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+    `;
+
+    const dialog = document.createElement('div');
+    dialog.style.cssText = `
+        background: #1a1a1a;
+        border: 1px solid #333;
+        padding: 2rem;
+        max-width: 400px;
+        width: 90%;
+        text-align: center;
+    `;
+
+    dialog.innerHTML = `
+        <p style="color: #fff; margin-bottom: 2rem; line-height: 1.6; white-space: pre-line;">${message}</p>
+        <div style="display: flex; gap: 1rem;">
+            <button class="cancelBtn" style="flex: 1; padding: 0.75rem; background: #000; border: 1px solid #fff; color: #fff; cursor: pointer; font-family: Montserrat, sans-serif; font-weight: 600;">Annuler</button>
+            <button class="confirmBtn" style="flex: 1; padding: 0.75rem; background: #fff; border: none; color: #000; cursor: pointer; font-family: Montserrat, sans-serif; font-weight: 600;">Confirmer</button>
+        </div>
+    `;
+
+    overlay.appendChild(dialog);
+    document.body.appendChild(overlay);
+
+    dialog.querySelector('.cancelBtn').onclick = () => overlay.remove();
+    dialog.querySelector('.confirmBtn').onclick = () => {
+        overlay.remove();
+        if (onConfirm) onConfirm();
+    };
+    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+}
+
+
 // Initialize
 document.addEventListener('DOMContentLoaded', async function () {
     checkAdminAuth();
@@ -34,8 +101,9 @@ function checkAdminAuth() {
 
     currentUser = JSON.parse(user);
     if (!currentUser.is_admin) {
-        alert('Accès refusé');
-        window.location.href = 'index.html';
+        showToast('Accès refusé', 'error');
+        setTimeout(() => window.location.href = 'index.html', 1500);
+        return;
     }
 }
 
@@ -88,7 +156,7 @@ function previewPoster(input) {
 
     if (file) {
         if (file.size > 5 * 1024 * 1024) {
-            alert('⚠️ L\'image doit faire moins de 5 MB');
+            showToast('L\'image doit faire moins de 5 MB', 'error');
             input.value = '';
             preview.innerHTML = '';
             return;
@@ -204,39 +272,39 @@ async function saveMovie(event) {
         });
 
         if (response.ok) {
-            alert(movieId ? 'Film modifié avec succès' : 'Film ajouté avec succès');
+            showToast(movieId ? 'Film modifié' : 'Film ajouté');
             closeModal('movieFormModal');
             loadMovies();
             loadStats();
         } else {
-            alert('Erreur lors de l\'enregistrement');
+            showToast('Erreur lors de l\'enregistrement', 'error');
         }
     } catch (error) {
         console.error('Save movie error:', error);
-        alert('Erreur lors de l\'enregistrement');
+        showToast('Erreur lors de l\'enregistrement', 'error');
     }
 }
 
 async function deleteMovie(movieId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce film ?')) return;
+    showConfirmDialog('Supprimer ce film ?', async () => {
+        try {
+            const response = await fetch(`${API_URL}/movies/${movieId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
 
-    try {
-        const response = await fetch(`${API_URL}/movies/${movieId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-
-        if (response.ok) {
-            alert('Film supprimé avec succès');
-            loadMovies();
-            loadStats();
-        } else {
-            alert('Erreur lors de la suppression');
+            if (response.ok) {
+                showToast('Film supprimé');
+                loadMovies();
+                loadStats();
+            } else {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        } catch (error) {
+            console.error('Delete movie error:', error);
+            showToast('Erreur lors de la suppression', 'error');
         }
-    } catch (error) {
-        console.error('Delete movie error:', error);
-        alert('Erreur lors de la suppression');
-    }
+    });
 }
 
 // ========== SHOWTIMES ==========
@@ -348,37 +416,37 @@ async function saveShowtime(event) {
         });
 
         if (response.ok) {
-            alert(showtimeId ? 'Séance modifiée avec succès' : 'Séance ajoutée avec succès');
+            showToast(showtimeId ? 'Séance modifiée' : 'Séance ajoutée');
             closeModal('showtimeFormModal');
             loadAllShowtimes();
         } else {
-            alert('Erreur lors de l\'enregistrement');
+            showToast('Erreur lors de l\'enregistrement', 'error');
         }
     } catch (error) {
         console.error('Save showtime error:', error);
-        alert('Erreur lors de l\'enregistrement');
+        showToast('Erreur lors de l\'enregistrement', 'error');
     }
 }
 
 async function deleteShowtime(showtimeId) {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette séance ?')) return;
+    showConfirmDialog('Supprimer cette séance ?', async () => {
+        try {
+            const response = await fetch(`${API_URL}/showtimes/${showtimeId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
 
-    try {
-        const response = await fetch(`${API_URL}/showtimes/${showtimeId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-
-        if (response.ok) {
-            alert('Séance supprimée avec succès');
-            loadAllShowtimes();
-        } else {
-            alert('Erreur lors de la suppression');
+            if (response.ok) {
+                showToast('Séance supprimée');
+                loadAllShowtimes();
+            } else {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        } catch (error) {
+            console.error('Delete showtime error:', error);
+            showToast('Erreur lors de la suppression', 'error');
         }
-    } catch (error) {
-        console.error('Delete showtime error:', error);
-        alert('Erreur lors de la suppression');
-    }
+    });
 }
 
 // ========== BOOKINGS ==========
@@ -432,23 +500,23 @@ function displayBookingsTable(bookingsData) {
 }
 
 async function deleteBooking(bookingId) {
-    if (!confirm('Supprimer définitivement cette réservation ?')) return;
+    showConfirmDialog('Supprimer définitivement cette réservation ?', async () => {
+        try {
+            const response = await fetch(`${API_URL}/admin/bookings/${bookingId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
 
-    try {
-        const response = await fetch(`${API_URL}/admin/bookings/${bookingId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${authToken}` }
-        });
-
-        if (response.ok) {
-            alert('✅ Réservation supprimée');
-            loadBookings(); // Recharger
-        } else {
-            alert('❌ Erreur lors de la suppression');
+            if (response.ok) {
+                showToast('Réservation supprimée');
+                loadBookings();
+            } else {
+                showToast('Erreur lors de la suppression', 'error');
+            }
+        } catch (e) {
+            showToast('Erreur de connexion', 'error');
         }
-    } catch (e) {
-        alert('❌ Erreur de connexion');
-    }
+    });
 }
 
 // ========== USERS ==========
@@ -528,13 +596,13 @@ async function savePrices() {
 
     // Valider que au moins UN prix est renseigné
     if (!adulte && !enfant && !popcorn) {
-        alert('❌ Veuillez entrer au moins un prix');
+        showToast('Veuillez entrer au moins un prix', 'error');
         return;
     }
 
     // Valider que les prix renseignés sont >= 500
     if ((adulte && adulte < 500) || (enfant && enfant < 500) || (popcorn && popcorn < 500)) {
-        alert('❌ Les prix doivent être au minimum 500 FCFA');
+        showToast('Les prix doivent être au minimum 500 FCFA', 'error');
         return;
     }
 
@@ -553,16 +621,16 @@ async function savePrices() {
 
         if (response.ok) {
             const messages = [];
-            if (adulte) messages.push(`🧑 Adulte : ${adulte.toLocaleString('fr-FR')} FCFA`);
-            if (enfant) messages.push(`👶 Enfant : ${enfant.toLocaleString('fr-FR')} FCFA`);
-            if (popcorn) messages.push(`🍿 Popcorn : ${popcorn.toLocaleString('fr-FR')} FCFA`);
-            alert(`✅ Tarifs mis à jour !\n\n${messages.join('\n')}`);
-            await loadPrices(); // Recharger pour afficher les nouvelles valeurs
+            if (adulte) messages.push(`Adulte : ${adulte.toLocaleString('fr-FR')}`);
+            if (enfant) messages.push(`Enfant : ${enfant.toLocaleString('fr-FR')}`);
+            if (popcorn) messages.push(`Popcorn : ${popcorn.toLocaleString('fr-FR')}`);
+            showToast(`✅ Tarifs mis à jour : ${messages.join(' · ')}`);
+            await loadPrices();
         } else {
-            alert('❌ Erreur lors de la mise à jour des tarifs');
+            showToast('Erreur lors de la mise à jour des tarifs', 'error');
         }
     } catch (e) {
-        alert('❌ Erreur de connexion');
+        showToast('Erreur de connexion', 'error');
     }
 }
 
