@@ -485,6 +485,7 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
 
 app.get('/api/bookings', authenticateToken, async (req, res) => {
     try {
+        console.log('👤 User', req.user.id, 'requesting bookings');
         const result = await pool.query(`
             SELECT b.*, m.title, s.date, s.time, s.room 
             FROM bookings b 
@@ -493,6 +494,10 @@ app.get('/api/bookings', authenticateToken, async (req, res) => {
             WHERE b.user_id = $1 
             ORDER BY b.booking_time DESC
         `, [req.user.id]);
+        console.log(`✅ Found ${result.rows.length} bookings for user ${req.user.id}`);
+        if (result.rows.length > 0) {
+            console.log('Sample booking:', result.rows[0]);
+        }
         res.json(result.rows);
     } catch (error) {
         console.error('Get bookings error:', error);
@@ -522,6 +527,66 @@ app.put('/api/bookings/:id/cancel', authenticateToken, async (req, res) => {
         res.json({ message: 'Booking cancelled successfully' });
     } catch (error) {
         res.status(500).json({ error: 'Failed to cancel booking' });
+    }
+});
+
+// ========== PROFILE ROUTES ==========
+
+app.put('/api/profile', authenticateToken, async (req, res) => {
+    const { name, phone, email } = req.body;
+    try {
+        // Vérifier si l'email est déjà pris
+        if (email !== req.user.email) {
+            const existing = await pool.query('SELECT id FROM users WHERE email = $1 AND id != $2', [email, req.user.id]);
+            if (existing.rows.length > 0) {
+                return res.status(400).json({ error: 'Cet email est déjà utilisé' });
+            }
+        }
+
+        await pool.query(
+            'UPDATE users SET name = $1, phone = $2, email = $3 WHERE id = $4',
+            [name, phone, email, req.user.id]
+        );
+
+        const updated = await pool.query('SELECT id, name, email, phone, is_admin FROM users WHERE id = $1', [req.user.id]);
+        console.log('✅ Profile updated for user', req.user.id);
+        res.json({ user: updated.rows[0], message: 'Profil mis à jour' });
+    } catch (error) {
+        console.error('Profile update error:', error);
+        res.status(500).json({ error: 'Erreur mise à jour profil' });
+    }
+});
+
+// ========== ADMIN BOOKING ROUTES ==========
+
+app.delete('/api/admin/bookings/:id', authenticateToken, isAdmin, async (req, res) => {
+    try {
+        const booking = await pool.query('SELECT * FROM bookings WHERE id = $1', [req.params.id]);
+        if (booking.rows.length === 0) {
+            return res.status(404).json({ error: 'Réservation introuvable' });
+        }
+
+        const b = booking.rows[0];
+        // Calculer le nombre de places à rendre
+        let totalTickets = 1;
+        try {
+            if (b.ticket_type) {
+                const tickets = JSON.parse(b.ticket_type);
+                totalTickets = (tickets.adulte || 0) + (tickets.enfant || 0) + (tickets.popcorn || 0) || 1;
+            }
+        } catch (e) {
+            // Si pas de ticket_type ou erreur parse, on prend 1 place par défaut
+            totalTickets = 1;
+        }
+
+        await pool.query('UPDATE showtimes SET available_seats = available_seats + $1 WHERE id = $2', [totalTickets, b.showtime_id]);
+        await pool.query('DELETE FROM bookings WHERE id = $1', [req.params.id]);
+
+        console.log(`🗑️  Admin deleted booking ${req.params.id}, restored ${totalTickets} seats`);
+        res.json({ message: 'Réservation supprimée' });
+    } catch (error) {
+        console.error('Delete booking error:', error);
+        res.status(500).json({ error: 'Erreur suppression' });
     }
 });
 

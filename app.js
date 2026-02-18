@@ -264,6 +264,53 @@ async function cancelBooking(bookingId) {
     });
 }
 
+function showEditProfile() {
+    document.getElementById('profileView').style.display = 'none';
+    document.getElementById('profileEdit').style.display = 'block';
+    document.getElementById('editName').value = currentUser.name;
+    document.getElementById('editEmail').value = currentUser.email;
+    document.getElementById('editPhone').value = currentUser.phone || '';
+}
+
+function cancelEditProfile() {
+    document.getElementById('profileView').style.display = 'block';
+    document.getElementById('profileEdit').style.display = 'none';
+}
+
+async function saveProfile(event) {
+    event.preventDefault();
+    const name = document.getElementById('editName').value;
+    const email = document.getElementById('editEmail').value;
+    const phone = document.getElementById('editPhone').value;
+
+    try {
+        const response = await fetch(`${API_URL}/profile`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+            body: JSON.stringify({ name, email, phone })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentUser = data.user;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+
+            document.getElementById('accountName').textContent = currentUser.name;
+            document.getElementById('accountEmail').textContent = currentUser.email;
+            document.getElementById('accountPhone').textContent = currentUser.phone || 'Non renseigné';
+
+            cancelEditProfile();
+            showToast('Profil mis à jour');
+        } else {
+            showToast(data.error || 'Erreur', 'error');
+        }
+    } catch (e) {
+        showToast('Erreur de connexion', 'error');
+    }
+}
+
+
 async function login(event) {
     event.preventDefault();
     const btn = event.target.querySelector('button[type=submit]');

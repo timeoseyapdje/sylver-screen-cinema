@@ -401,7 +401,7 @@ async function loadBookings() {
 function displayBookingsTable(bookingsData) {
     const tbody = document.querySelector('#bookingsTable tbody');
     if (!bookingsData || bookingsData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune réservation</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Aucune réservation</td></tr>';
         return;
     }
 
@@ -423,9 +423,32 @@ function displayBookingsTable(bookingsData) {
                 <td>${parseInt(booking.total_price).toLocaleString('fr-FR')} FCFA</td>
                 <td>${booking.status === 'confirmed' ? '✅ Confirmé' : '❌ Annulé'}</td>
                 <td>${bookingDate}</td>
+                <td>
+                    <button class="btn-delete" onclick="deleteBooking(${booking.id})">Supprimer</button>
+                </td>
             </tr>
         `;
     }).join('');
+}
+
+async function deleteBooking(bookingId) {
+    if (!confirm('Supprimer définitivement cette réservation ?')) return;
+
+    try {
+        const response = await fetch(`${API_URL}/admin/bookings/${bookingId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+
+        if (response.ok) {
+            alert('✅ Réservation supprimée');
+            loadBookings(); // Recharger
+        } else {
+            alert('❌ Erreur lors de la suppression');
+        }
+    } catch (e) {
+        alert('❌ Erreur de connexion');
+    }
 }
 
 // ========== USERS ==========
