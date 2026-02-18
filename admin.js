@@ -199,6 +199,12 @@ async function loadMovies() {
 
 function displayMoviesTable(moviesData) {
     const tbody = document.querySelector('#moviesTable tbody');
+
+    if (!moviesData || moviesData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Aucun film</td></tr>';
+        return;
+    }
+
     tbody.innerHTML = moviesData.map(movie => {
         const posterImg = movie.poster_url
             ? `<img src="${movie.poster_url}" style="width:50px; height:75px; object-fit:cover; border:1px solid #333;">`
@@ -359,16 +365,28 @@ function displayShowtimesTable(showtimesData) {
     const past = [];
 
     showtimesData.forEach(st => {
-        const showtimeDate = new Date(`${st.date}T${st.time}`);
-        if (showtimeDate > now) {
-            future.push(st);
-        } else {
+        try {
+            // Extraire date string proprement
+            const dateStr = typeof st.date === 'string' ? st.date.split('T')[0] : st.date;
+            const timeStr = typeof st.time === 'string' ? st.time.substring(0, 8) : st.time;
+            const showtimeDate = new Date(`${dateStr}T${timeStr}`);
+
+            if (showtimeDate > now) {
+                future.push(st);
+            } else {
+                past.push(st);
+            }
+        } catch (e) {
+            console.error('Error parsing showtime date:', st.id, e);
+            // En cas d'erreur, mettre en passé par défaut
             past.push(st);
         }
     });
 
     // Afficher séances futures
     const tbody = document.querySelector('#showtimesTable tbody');
+    console.log('📅 Showtimes: Future=', future.length, 'Past=', past.length);
+
     if (future.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:2rem; color:#999;">Aucune séance à venir</td></tr>';
     } else {
@@ -542,19 +560,30 @@ function displayBookingsTable(bookingsData) {
     const archived = [];
 
     bookingsData.forEach(booking => {
-        const showtimeDate = new Date(`${booking.date}T${booking.time}`);
-        const isFuture = showtimeDate > now;
-        const isConfirmed = booking.status === 'confirmed';
+        try {
+            // Extraire date string proprement
+            const dateStr = typeof booking.date === 'string' ? booking.date.split('T')[0] : booking.date;
+            const timeStr = typeof booking.time === 'string' ? booking.time.substring(0, 8) : booking.time;
+            const showtimeDate = new Date(`${dateStr}T${timeStr}`);
+            const isFuture = showtimeDate > now;
+            const isConfirmed = booking.status === 'confirmed';
 
-        if (isFuture && isConfirmed) {
-            active.push(booking);
-        } else {
+            if (isFuture && isConfirmed) {
+                active.push(booking);
+            } else {
+                archived.push(booking);
+            }
+        } catch (e) {
+            console.error('Error parsing booking date:', booking.id, e);
+            // En cas d'erreur, mettre en archive par défaut
             archived.push(booking);
         }
     });
 
     // Afficher réservations actives
     const tbody = document.querySelector('#bookingsTable tbody');
+    console.log('🎟️ Bookings: Active=', active.length, 'Archived=', archived.length);
+
     if (active.length === 0) {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center; padding:2rem; color:#999;">Aucune réservation active</td></tr>';
     } else {
