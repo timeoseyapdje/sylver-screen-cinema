@@ -417,43 +417,43 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
         await pool.query('UPDATE showtimes SET available_seats = available_seats - $1 WHERE id = $2', [totalTickets, showtime_id]);
 
         const bookingId = result.rows[0].id;
-        const bookingDetails = await pool.query(`
+
+        // RÉPONDRE IMMÉDIATEMENT - email en arrière-plan
+        res.json({ id: bookingId, seats: seats.join(', '), message: 'Booking created successfully' });
+
+        // Envoyer l'email en arrière-plan (sans bloquer la réponse)
+        pool.query(`
             SELECT u.name, u.email, m.title, s.date, s.time, s.room
             FROM bookings b JOIN users u ON b.user_id = u.id
             JOIN showtimes s ON b.showtime_id = s.id JOIN movies m ON s.movie_id = m.id WHERE b.id = $1
-        `, [bookingId]);
+        `, [bookingId]).then(bookingDetails => {
+            if (bookingDetails.rows.length > 0) {
+                const details = bookingDetails.rows[0];
+                const ticketBreakdown = [];
+                if (tickets.adulte > 0) ticketBreakdown.push(`${tickets.adulte} Adulte(s)`);
+                if (tickets.enfant > 0) ticketBreakdown.push(`${tickets.enfant} Enfant(s)`);
+                if (tickets.popcorn > 0) ticketBreakdown.push(`${tickets.popcorn} Popcorn`);
 
-        if (bookingDetails.rows.length > 0) {
-            const details = bookingDetails.rows[0];
-            const ticketBreakdown = [];
-            if (tickets.adulte > 0) ticketBreakdown.push(`${tickets.adulte} Adulte(s)`);
-            if (tickets.enfant > 0) ticketBreakdown.push(`${tickets.enfant} Enfant(s)`);
-            if (tickets.popcorn > 0) ticketBreakdown.push(`${tickets.popcorn} Popcorn`);
-
-            const confirmationHTML = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <h1 style="color: #000;">Réservation confirmée ! 🎟️</h1>
-                    <p>Bonjour <strong>${details.name}</strong>,</p>
-                    <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
-                        <p><strong>Film:</strong> ${details.title}</p>
-                        <p><strong>Date:</strong> ${new Date(details.date).toLocaleDateString('fr-FR')}</p>
-                        <p><strong>Heure:</strong> ${details.time}</p>
-                        <p><strong>Salle:</strong> ${details.room}</p>
-                        <p><strong>Billets:</strong> ${ticketBreakdown.join(' + ')}</p>
-                        <p><strong>Places:</strong> ${seats.join(', ')}</p>
-                        <p><strong>Total:</strong> ${total_price.toLocaleString('fr-FR')} FCFA</p>
+                const confirmationHTML = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h1 style="color: #000;">Réservation confirmée ! 🎟️</h1>
+                        <p>Bonjour <strong>${details.name}</strong>,</p>
+                        <div style="background: #f5f5f5; padding: 20px; border-radius: 10px;">
+                            <p><strong>Film:</strong> ${details.title}</p>
+                            <p><strong>Date:</strong> ${new Date(details.date).toLocaleDateString('fr-FR')}</p>
+                            <p><strong>Heure:</strong> ${details.time}</p>
+                            <p><strong>Salle:</strong> ${details.room}</p>
+                            <p><strong>Billets:</strong> ${ticketBreakdown.join(' + ')}</p>
+                            <p><strong>Places:</strong> ${seats.join(', ')}</p>
+                            <p><strong>Total:</strong> ${total_price.toLocaleString('fr-FR')} FCFA</p>
+                        </div>
+                        <p>Annulation gratuite jusqu'à 5 min avant.</p>
                     </div>
-                    <p>Annulation gratuite jusqu'à 5 min avant.</p>
-                </div>
-            `;
-            try {
-                await sendEmail(details.email, `Confirmation - ${details.title}`, confirmationHTML);
-            } catch (e) {
-                console.log('Email sending failed, but booking created');
+                `;
+                sendEmail(details.email, `Confirmation - ${details.title}`, confirmationHTML)
+                    .catch(e => console.log('Email background error:', e.message));
             }
-        }
-
-        res.json({ id: bookingId, seats: seats.join(', '), message: 'Booking created successfully' });
+        }).catch(e => console.log('Email fetch error:', e.message));
     } catch (error) {
         console.error('Booking error:', error);
         res.status(500).json({ error: 'Failed to create booking' });
@@ -463,12 +463,16 @@ app.post('/api/bookings', authenticateToken, async (req, res) => {
 app.get('/api/bookings', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT b.*, m.title as movie_title, s.date, s.time, s.room 
-            FROM bookings b JOIN showtimes s ON b.showtime_id = s.id 
-            JOIN movies m ON s.movie_id = m.id WHERE b.user_id = $1 ORDER BY b.booking_time DESC
+            SELECT b.*, m.title, s.date, s.time, s.room 
+            FROM bookings b 
+            JOIN showtimes s ON b.showtime_id = s.id 
+            JOIN movies m ON s.movie_id = m.id 
+            WHERE b.user_id = $1 
+            ORDER BY b.booking_time DESC
         `, [req.user.id]);
         res.json(result.rows);
     } catch (error) {
+        console.error('Get bookings error:', error);
         res.status(500).json({ error: 'Failed to fetch bookings' });
     }
 });

@@ -185,15 +185,21 @@ async function loadUserBookings() {
             headers: { 'Authorization': `Bearer ${authToken}` }
         });
 
-        if (!response.ok) throw new Error('Failed');
+        if (!response.ok) {
+            console.error('Bookings response error:', response.status);
+            throw new Error('Failed');
+        }
 
         const bookings = await response.json();
+        console.log('Bookings loaded:', bookings.length);
         const now = new Date();
 
         const futureBookings = bookings.filter(b => {
             const showtime = new Date(`${b.date}T${b.time}`);
             return showtime > now && b.status === 'confirmed';
         });
+
+        console.log('Future bookings:', futureBookings.length);
 
         if (futureBookings.length === 0) {
             container.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:3rem 1rem;">Aucune réservation active</p>';
@@ -221,7 +227,8 @@ async function loadUserBookings() {
             `;
         }).join('');
     } catch (e) {
-        container.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:2rem;">Erreur</p>';
+        console.error('Load bookings error:', e);
+        container.innerHTML = '<p style="text-align:center; color:var(--text-gray); padding:2rem;">Erreur de chargement. Vérifiez la console.</p>';
     }
 }
 
