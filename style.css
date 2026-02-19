@@ -474,45 +474,6 @@ button:disabled {
     flex-wrap: wrap;
 }
 
-.hero-scroll {
-    position: absolute;
-    bottom: 40px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 12px;
-    color: var(--text-tertiary);
-    font-size: 0.8rem;
-    text-transform: uppercase;
-}
-
-.scroll-indicator {
-    width: 2px;
-    height: 40px;
-    background: var(--border-color);
-    position: relative;
-    overflow: hidden;
-}
-
-.scroll-indicator::after {
-    content: '';
-    position: absolute;
-    width: 100%;
-    height: 20px;
-    background: var(--accent-primary);
-    animation: scrollDown 2s infinite;
-}
-
-@keyframes scrollDown {
-    0% {
-        transform: translateY(-100%);
-    }
-
-    100% {
-        transform: translateY(200%);
-    }
-}
-
 /* === SECTIONS === */
 section {
     padding: 100px 40px;
@@ -677,6 +638,13 @@ section {
     transition: all 0.3s ease;
     font-size: 2rem;
     color: var(--text-primary);
+    outline: none;
+}
+
+.carousel-nav:active,
+.carousel-nav:focus {
+    outline: none;
+    border-color: var(--accent-primary);
 }
 
 .carousel-nav:hover {
@@ -1559,4 +1527,323 @@ footer {
 ::selection {
     background: var(--accent-primary);
     color: var(--bg-primary);
+}
+
+.admin-panel {
+    max-width: 1400px;
+    margin: 150px auto 4rem;
+    padding: 0 2rem;
+}
+
+.admin-header {
+    margin-bottom: 4rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.admin-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem;
+    letter-spacing: 2px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+
+.stat-card {
+    background: var(--gray);
+    border: 1px solid var(--border-gray);
+    padding: 2rem;
+    text-align: center;
+}
+
+.stat-number {
+    font-family: 'Playfair Display', serif;
+    font-size: 3rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: var(--text-gray);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+}
+
+.admin-section {
+    background: var(--gray);
+    border: 1px solid var(--border-gray);
+    padding: 3rem;
+    margin-bottom: 3rem;
+}
+
+.admin-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.5rem;
+    margin-bottom: 2rem;
+    letter-spacing: 2px;
+}
+
+.section-actions {
+    margin-bottom: 2rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+th {
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+}
+
+.btn-edit,
+.btn-delete {
+    padding: 0.5rem 1rem;
+    border: none;
+    cursor: pointer;
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.3s;
+}
+
+.btn-edit {
+    background: var(--white);
+    color: var(--black);
+}
+
+.btn-edit:hover {
+    background: var(--text-gray);
+}
+
+.btn-delete {
+    background: transparent;
+    color: var(--white);
+    border: 1px solid var(--white);
+}
+
+.btn-delete:hover {
+    background: var(--white);
+    color: var(--black);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-gray);
+}
+
+.tab {
+    padding: 1rem 2rem;
+    background: transparent;
+    border: none;
+    color: var(--text-gray);
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.3s;
+    border-bottom: 2px solid transparent;
+}
+
+.tab.active {
+    color: var(--white);
+    border-bottom-color: var(--white);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* ========== RESPONSIVE MOBILE ========== */
+@media (max-width: 768px) {
+    nav .nav-links {
+        display: none;
+    }
+
+    #mobileLogout {
+        display: block !important;
+        font-size: 0.75rem;
+        padding: 0.6rem 1rem;
+    }
+
+    .admin-panel {
+        padding: 0.5rem;
+    }
+
+    .admin-header {
+        padding: 1.5rem 1rem;
+    }
+
+    .admin-header h1 {
+        font-size: 1.4rem;
+        letter-spacing: 1px;
+    }
+
+    .tabs {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        overflow-x: auto;
+    }
+
+    .tab {
+        font-size: 0.7rem;
+        padding: 0.6rem 0.8rem;
+        flex: 1 1 40%;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.75rem;
+    }
+
+    .stat-card {
+        padding: 1rem 0.75rem;
+    }
+
+    .stat-value {
+        font-size: 1.4rem;
+    }
+
+    .stat-label {
+        font-size: 0.65rem;
+    }
+
+    .admin-section {
+        padding: 0.75rem;
+        margin-bottom: 1rem;
+        overflow-x: auto;
+    }
+
+    .admin-section h2 {
+        font-size: 1.1rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Tables responsive avec scroll horizontal */
+    .admin-section table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+        font-size: 0.7rem;
+        min-width: 600px;
+    }
+
+    table th,
+    table td {
+        padding: 0.5rem 0.4rem;
+    }
+
+    .btn-edit,
+    .btn-delete {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.65rem;
+    }
+
+    .btn-white,
+    .btn-black {
+        padding: 0.6rem 1rem;
+        font-size: 0.75rem;
+    }
+
+    .section-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .section-actions button {
+        width: 100%;
+    }
+
+    .modal-content {
+        width: 98%;
+        max-width: 100%;
+        max-height: 95vh;
+        padding: 0;
+        margin: 0.5rem;
+    }
+
+    .modal-header {
+        padding: 1rem;
+    }
+
+    .modal-header h2 {
+        font-size: 1.2rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+        max-height: calc(95vh - 80px);
+        overflow-y: auto;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-group label {
+        font-size: 0.75rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        padding: 0.7rem;
+        font-size: 0.9rem;
+    }
+
+    /* Prix settings sur mobile */
+    .admin-section>div[style*="grid"] {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-header h1 {
+        font-size: 1.2rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tab {
+        flex: 1 1 100%;
+    }
 }

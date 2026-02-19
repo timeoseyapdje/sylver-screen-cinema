@@ -98,6 +98,11 @@ document.addEventListener('DOMContentLoaded', function () {
     checkAuth();
     loadMovies();
     loadTicketPrices();
+
+    // Load films carousel if element exists
+    if (document.getElementById('filmsCarousel')) {
+        loadFilmsCarousel();
+    }
 });
 
 function checkAuth() {
@@ -954,3 +959,77 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.textContent = savedTheme === 'light' ? '🌙' : '☀️';
     }
 });
+
+// ========== FILMS CAROUSEL ==========
+async function loadFilmsCarousel() {
+    console.log('🎬 loadFilmsCarousel appelé');
+    const carousel = document.getElementById('filmsCarousel');
+    console.log('📦 Carousel element:', carousel);
+
+    if (!carousel) {
+        console.error('❌ Element #filmsCarousel non trouvé');
+        return;
+    }
+
+    try {
+        console.log('🌐 Fetching:', `${API_URL}/movies`);
+        const response = await fetch(`${API_URL}/movies`);
+        console.log('📡 Response:', response.status);
+        const films = await response.json();
+        console.log('🎥 Films:', films.length, 'trouvés');
+
+        if (!films || films.length === 0) {
+            carousel.innerHTML = '<div class="carousel-loading"><p>Aucun film disponible</p></div>';
+            return;
+        }
+
+        carousel.innerHTML = films.map(film => `
+            <a href="film.html?id=${film.id}" class="film-card-carousel">
+                <div class="film-card-poster">
+                    ${film.poster_url
+                ? `<img src="${film.poster_url}" alt="${film.title}" loading="lazy">`
+                : `<div style="display:flex;align-items:center;justify-content:center;height:100%;background:var(--bg-tertiary);">
+                            <span style="font-size:4rem;">🎬</span>
+                           </div>`
+            }
+                </div>
+                <div class="film-card-info">
+                    <h3 class="film-card-title">${film.title}</h3>
+                    <div class="film-card-meta">
+                        <span>${film.genre || 'Genre'}</span>
+                        <span>${film.duration ? film.duration + ' min' : 'N/A'}</span>
+                        ${film.rating ? `<span>★ ${film.rating}/5</span>` : ''}
+                    </div>
+                    <p class="film-card-description">${film.description || 'Description non disponible.'}</p>
+                    <div class="film-card-cta">
+                        <button class="btn-book" onclick="event.preventDefault(); window.location.href='film.html?id=${film.id}'">
+                            Réserver
+                        </button>
+                    </div>
+                </div>
+            </a>
+        `).join('');
+
+        setupCarouselNavigation();
+
+    } catch (error) {
+        console.error('❌ Error loading films carousel:', error);
+        carousel.innerHTML = '<div class="carousel-loading"><p>Erreur de chargement. Vérifier console.</p></div>';
+    }
+}
+
+function setupCarouselNavigation() {
+    const carousel = document.getElementById('filmsCarousel');
+    const prevBtn = document.getElementById('carouselPrev');
+    const nextBtn = document.getElementById('carouselNext');
+
+    if (!carousel || !prevBtn || !nextBtn) return;
+
+    prevBtn.addEventListener('click', () => {
+        carousel.scrollBy({ left: -400, behavior: 'smooth' });
+    });
+
+    nextBtn.addEventListener('click', () => {
+        carousel.scrollBy({ left: 400, behavior: 'smooth' });
+    });
+}
