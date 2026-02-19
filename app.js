@@ -875,3 +875,82 @@ document.querySelectorAll('.modal').forEach(modal => {
         if (e.target === modal) closeModal(modal.id);
     });
 });
+
+// ========== HERO SLIDER ==========
+let currentSlide = 0;
+let autoSlideInterval;
+
+function showSlide(index) {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots = document.querySelectorAll('.slider-dot');
+
+    if (!slides.length) return;
+
+    // Wrap around
+    if (index >= slides.length) currentSlide = 0;
+    else if (index < 0) currentSlide = slides.length - 1;
+    else currentSlide = index;
+
+    // Update slides
+    slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === currentSlide);
+    });
+
+    // Update dots
+    dots.forEach((dot, i) => {
+        dot.classList.toggle('active', i === currentSlide);
+    });
+}
+
+function changeSlide(direction) {
+    showSlide(currentSlide + direction);
+    resetAutoSlide();
+}
+
+function goToSlide(index) {
+    showSlide(index);
+    resetAutoSlide();
+}
+
+function resetAutoSlide() {
+    clearInterval(autoSlideInterval);
+    startAutoSlide();
+}
+
+function startAutoSlide() {
+    autoSlideInterval = setInterval(() => {
+        showSlide(currentSlide + 1);
+    }, 5000); // Change slide every 5 seconds
+}
+
+// Initialize slider
+document.addEventListener('DOMContentLoaded', () => {
+    showSlide(0);
+    startAutoSlide();
+});
+
+// ========== THEME TOGGLE ==========
+function toggleTheme() {
+    const html = document.documentElement;
+    const currentTheme = html.getAttribute('data-theme');
+    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    const icon = document.getElementById('themeIcon');
+
+    html.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
+
+    // Update icon
+    icon.textContent = newTheme === 'light' ? '🌙' : '☀️';
+}
+
+// Load saved theme
+document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    const icon = document.getElementById('themeIcon');
+
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    if (icon) {
+        icon.textContent = savedTheme === 'light' ? '🌙' : '☀️';
+    }
+});

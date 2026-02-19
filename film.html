@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">Film - Sylver Screen Cinema</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Dialog Overlay -->
+    <div class="dialog-overlay" id="dialogOverlay">
+        <div class="dialog-box">
+            <div class="dialog-icon" id="dialogIcon">ℹ️</div>
+            <h3 class="dialog-title" id="dialogTitle">Titre</h3>
+            <p class="dialog-message" id="dialogMessage">Message</p>
+            <div class="dialog-buttons" id="dialogButtons"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <nav>
+            <div class="logo" onclick="window.location.href='index.html'">SYLVER SCREEN</div>
+            <div class="nav-links" id="navLinks">
+                <a href="index.html#home">Accueil</a>
+                <a href="index.html#films">Films à l'affiche</a>
+                <a href="index.html#experience">L'expérience</a>
+                <a href="index.html#contact">Contact</a>
+                <button class="btn-white" id="loginBtn" onclick="openLoginModal()">Connexion</button>
+                <button class="btn-black" id="registerBtn" onclick="openRegisterModal()">S'inscrire</button>
+            </div>
+            <button class="hamburger" id="hamburger" onclick="toggleMenu()">
+                <span></span><span></span><span></span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html#home" onclick="toggleMenu()">Accueil</a>
+        <a href="index.html#films" onclick="toggleMenu()">Films à l'affiche</a>
+        <a href="index.html#experience" onclick="toggleMenu()">L'expérience</a>
+        <a href="index.html#contact" onclick="toggleMenu()">Contact</a>
+        <div class="mobile-menu-btns">
+            <button class="btn-white" onclick="toggleMenu(); openLoginModal()">Connexion</button>
+            <button class="btn-black" onclick="toggleMenu(); openRegisterModal()">S'inscrire</button>
+        </div>
+    </div>
+
+    <!-- Film Hero -->
+    <div class="film-hero" id="filmHero">
+        <div class="film-hero-bg"></div>
+        <div class="film-hero-content">
+            <div class="container">
+                <a href="index.html#films" class="back-link">← Retour aux films</a>
+                <div class="film-hero-info">
+                    <h1 class="film-title" id="filmTitle">Titre du film</h1>
+                    <div class="film-meta">
+                        <span class="film-genre" id="filmGenre">Genre</span>
+                        <span class="film-duration" id="filmDuration">120 min</span>
+                        <span class="film-rating-badge" id="filmRatingBadge">★ 4.5</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Film Content -->
+    <div class="film-content">
+        <div class="container">
+            <div class="film-grid">
+                <!-- Left Column: Trailer & Synopsis -->
+                <div class="film-main">
+                    <!-- Trailer Section -->
+                    <section class="film-section">
+                        <h2 class="section-title-small">Bande-annonce</h2>
+                        <div class="trailer-container" id="trailerContainer">
+                            <div class="trailer-placeholder">
+                                <div class="play-button" onclick="playTrailer()">
+                                    <svg width="80" height="80" viewBox="0 0 80 80">
+                                        <circle cx="40" cy="40" r="38" fill="rgba(255,255,255,0.2)" stroke="white"
+                                            stroke-width="2" />
+                                        <polygon points="32,25 32,55 55,40" fill="white" />
+                                    </svg>
+                                </div>
+                                <p>Cliquez pour voir la bande-annonce</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Synopsis -->
+                    <section class="film-section">
+                        <h2 class="section-title-small">Synopsis</h2>
+                        <p class="film-synopsis" id="filmSynopsis">
+                            Chargement de la description...
+                        </p>
+                    </section>
+
+                    <!-- Rating -->
+                    <section class="film-section">
+                        <h2 class="section-title-small">Votre avis</h2>
+                        <div class="rating-interactive">
+                            <div class="rating-stars" id="userRating">
+                                <span class="star" onclick="rateMovie(1)">★</span>
+                                <span class="star" onclick="rateMovie(2)">★</span>
+                                <span class="star" onclick="rateMovie(3)">★</span>
+                                <span class="star" onclick="rateMovie(4)">★</span>
+                                <span class="star" onclick="rateMovie(5)">★</span>
+                            </div>
+                            <p class="rating-text">Cliquez pour noter ce film</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Column: Booking -->
+                <div class="film-sidebar">
+                    <div class="booking-card-sticky">
+                        <h3>Réserver vos places</h3>
+
+                        <!-- Showtime Selection -->
+                        <div class="form-group">
+                            <label>Choisir une séance</label>
+                            <select id="showtimeSelect" onchange="selectShowtime()">
+                                <option value="">Sélectionnez une séance</option>
+                            </select>
+                        </div>
+
+                        <!-- Tickets -->
+                        <div class="tickets-selection" id="ticketsSelection" style="display:none;">
+                            <h4>Nombre de billets</h4>
+
+                            <!-- Adult Tickets -->
+                            <div class="ticket-row">
+                                <div class="ticket-info">
+                                    <span class="ticket-type">🧑 Adulte</span>
+                                    <span class="ticket-price" id="priceAdulte">3 000 FCFA</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" onclick="changeTicketQty('adulte', -1)">−</button>
+                                    <span id="qtyAdulte">0</span>
+                                    <button type="button" onclick="changeTicketQty('adulte', 1)">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Child Tickets -->
+                            <div class="ticket-row">
+                                <div class="ticket-info">
+                                    <span class="ticket-type">👶 Enfant</span>
+                                    <span class="ticket-price" id="priceEnfant">2 000 FCFA</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" onclick="changeTicketQty('enfant', -1)">−</button>
+                                    <span id="qtyEnfant">0</span>
+                                    <button type="button" onclick="changeTicketQty('enfant', 1)">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Popcorn -->
+                            <div class="ticket-row">
+                                <div class="ticket-info">
+                                    <span class="ticket-type">🍿 Popcorn</span>
+                                    <span class="ticket-price" id="pricePopcorn">4 000 FCFA</span>
+                                </div>
+                                <div class="ticket-counter">
+                                    <button type="button" onclick="changeTicketQty('popcorn', -1)">−</button>
+                                    <span id="qtyPopcorn">0</span>
+                                    <button type="button" onclick="changeTicketQty('popcorn', 1)">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Total -->
+                            <div class="booking-total">
+                                <span>Total</span>
+                                <span class="total-amount" id="totalAmount">0 FCFA</span>
+                            </div>
+
+                            <!-- Book Button -->
+                            <button class="btn-book-large" onclick="proceedToSeats()">
+                                Choisir mes places
+                            </button>
+                        </div>
+
+                        <!-- Info Message -->
+                        <div class="booking-info">
+                            <p>💳 Paiement sécurisé</p>
+                            <p>🎫 E-ticket envoyé par email</p>
+                            <p>⏰ Annulation jusqu'à 5 min avant</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Seats Modal -->
+    <div class="modal" id="seatsModal">
+        <div class="modal-content" style="max-width:800px;">
+            <div class="modal-header">
+                <h2 class="modal-title">Choisir vos places</h2>
+                <button class="close-modal" onclick="closeModal('seatsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="screen-indicator">
+                    <div class="screen-label">ÉCRAN</div>
+                </div>
+
+                <div class="seats-grid" id="seatsGrid">
+                    <!-- Generated by JS -->
+                </div>
+
+                <div class="seats-legend">
+                    <div class="legend-item">
+                        <div class="seat-example available"></div>
+                        <span>Disponible</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="seat-example selected"></div>
+                        <span>Sélectionné</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="seat-example occupied"></div>
+                        <span>Occupé</span>
+                    </div>
+                </div>
+
+                <div class="seats-summary">
+                    <div>
+                        <strong>Places sélectionnées:</strong>
+                        <span id="selectedSeatsDisplay">Aucune</span>
+                    </div>
+                    <div>
+                        <strong>Total:</strong>
+                        <span id="seatsTotalDisplay">0 FCFA</span>
+                    </div>
+                </div>
+
+                <button class="btn-white" style="width:100%; padding:1rem;" onclick="confirmBooking()">
+                    Confirmer la réservation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">CONNEXION</h2>
+                <button class="close-modal" onclick="closeModal('loginModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="login(event)">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="loginEmail" placeholder="votre@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mot de passe</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="loginPassword" placeholder="Votre mot de passe" required>
+                            <button type="button" class="toggle-password"
+                                onclick="togglePassword('loginPassword', this)">👁</button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-white" style="width:100%; padding:1rem;">
+                        Se connecter
+                    </button>
+                    <p style="text-align:center; margin-top:1.5rem; color:var(--text-secondary);">
+                        Pas encore de compte ? <a href="#"
+                            onclick="event.preventDefault(); closeModal('loginModal'); openRegisterModal();"
+                            style="color:var(--accent-primary);">S'inscrire</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal" id="registerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">INSCRIPTION</h2>
+                <button class="close-modal" onclick="closeModal('registerModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="registerStep1(event)">
+                    <div class="form-group">
+                        <label>Nom complet</label>
+                        <input type="text" id="registerName" placeholder="Jean Dupont" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="registerEmail" placeholder="votre@email.com" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Téléphone</label>
+                        <input type="tel" id="registerPhone" placeholder="+237 XXX XXX XXX" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Mot de passe</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="registerPassword" placeholder="Min. 6 caractères" required
+                                minlength="6">
+                            <button type="button" class="toggle-password"
+                                onclick="togglePassword('registerPassword', this)">👁</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-check">
+                            <input type="checkbox" id="newsletterOptIn" checked>
+                            <span>Recevoir les nouveautés par email</span>
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-white" style="width:100%; padding:1rem;">
+                        Créer mon compte
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Theme Toggle -->
+    <div class="theme-toggle" onclick="toggleTheme()" title="Changer de thème">
+        <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-section">
+                <h3>Sylver Screen Cinema</h3>
+                <p>Douala Grand Mall<br>Route de l'Aéroport<br>Douala, Cameroun</p>
+            </div>
+            <div class="footer-section">
+                <h3>Navigation</h3>
+                <a href="index.html#home">Accueil</a>
+                <a href="index.html#films">Films</a>
+                <a href="index.html#experience">Expérience</a>
+            </div>
+            <div class="footer-section">
+                <h3>Suivez-nous</h3>
+                <a href="#">Facebook</a>
+                <a href="#">Instagram</a>
+                <a href="#">Twitter</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Sylver Screen Cinema. Tous droits réservés.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+    <script src="film.js"></script>
+</body>
+
+</html>

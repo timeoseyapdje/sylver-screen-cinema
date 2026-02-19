@@ -5,8 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sylver Screen Cinema - Douala Grand Mall</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,12 +18,12 @@
     <!-- Toast Container -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Dialog -->
+    <!-- Dialog Overlay -->
     <div class="dialog-overlay" id="dialogOverlay">
         <div class="dialog-box">
-            <div class="dialog-icon" id="dialogIcon"></div>
-            <div class="dialog-title" id="dialogTitle"></div>
-            <div class="dialog-message" id="dialogMessage"></div>
+            <div class="dialog-icon" id="dialogIcon">ℹ️</div>
+            <h3 class="dialog-title" id="dialogTitle">Titre</h3>
+            <p class="dialog-message" id="dialogMessage">Message</p>
             <div class="dialog-buttons" id="dialogButtons"></div>
         </div>
     </div>
@@ -29,16 +31,16 @@
     <!-- Header -->
     <header>
         <nav>
-            <div class="logo-text">SYLVER SCREEN</div>
+            <div class="logo" onclick="window.location.href='index.html'">SYLVER SCREEN</div>
             <div class="nav-links" id="navLinks">
                 <a href="#home">Accueil</a>
-                <a href="#movies">Films</a>
-                <a href="#experience">Expérience</a>
+                <a href="#films">Films à l'affiche</a>
+                <a href="#experience">L'expérience</a>
                 <a href="#contact">Contact</a>
                 <button class="btn-white" id="loginBtn" onclick="openLoginModal()">Connexion</button>
-                <button class="btn-black" id="registerBtn" onclick="openRegisterModal()">Créer un compte</button>
+                <button class="btn-black" id="registerBtn" onclick="openRegisterModal()">S'inscrire</button>
             </div>
-            <button class="hamburger" id="hamburger" onclick="toggleMobileMenu()">
+            <button class="hamburger" id="hamburger" onclick="toggleMenu()">
                 <span></span><span></span><span></span>
             </button>
         </nav>
@@ -46,80 +48,90 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="#home" onclick="closeMobileMenu()">Accueil</a>
-        <a href="#movies" onclick="closeMobileMenu()">Films</a>
-        <a href="#experience" onclick="closeMobileMenu()">Expérience</a>
-        <a href="#contact" onclick="closeMobileMenu()">Contact</a>
+        <a href="#home" onclick="toggleMenu()">Accueil</a>
+        <a href="#films" onclick="toggleMenu()">Films à l'affiche</a>
+        <a href="#experience" onclick="toggleMenu()">L'expérience</a>
+        <a href="#contact" onclick="toggleMenu()">Contact</a>
         <div class="mobile-menu-btns">
-            <button class="btn-white" id="mobileLoginBtn"
-                onclick="closeMobileMenu(); openLoginModal()">Connexion</button>
-            <button class="btn-black" id="mobileRegisterBtn" onclick="closeMobileMenu(); openRegisterModal()">Créer un
-                compte</button>
+            <button class="btn-white" onclick="toggleMenu(); openLoginModal()">Connexion</button>
+            <button class="btn-black" onclick="toggleMenu(); openRegisterModal()">S'inscrire</button>
         </div>
     </div>
 
-    <!-- Hero -->
-    <section class="hero" id="home">
+    <!-- Hero Section -->
+    <section class="hero-home" id="home">
         <div class="hero-content">
-            <h1>SYLVER SCREEN</h1>
-            <p class="hero-subtitle">LE TEMPLE DU CINÉMA À DOUALA</p>
+            <div class="hero-badge">Cinéma Premium Douala</div>
+            <h1>SYLVER SCREEN CINEMA</h1>
+            <p>Le temple du 7ème art au cœur de Douala Grand Mall</p>
             <div class="hero-buttons">
                 <button class="btn-white"
-                    onclick="document.getElementById('movies').scrollIntoView({behavior:'smooth'})">Voir les
-                    films</button>
+                    onclick="document.getElementById('films').scrollIntoView({behavior:'smooth'})">
+                    Découvrir les films
+                </button>
+                <button class="btn-outline" onclick="openRegisterModal()">
+                    Devenir membre
+                </button>
             </div>
+        </div>
+        <div class="hero-scroll">
+            <span>Scroll</span>
+            <div class="scroll-indicator"></div>
         </div>
     </section>
 
-    <!-- Movies -->
-    <section class="movies-section" id="movies">
+    <!-- Films Slider Section (Style Grand Rex) -->
+    <section class="films-slider-section" id="films">
         <div class="section-header">
-            <h2 class="section-title">À L'AFFICHE</h2>
-            <p class="section-subtitle">DÉCOUVREZ NOS FILMS EN COURS</p>
+            <div class="section-badge">À l'affiche</div>
+            <h2 class="section-title">Films en salle</h2>
+            <p class="section-subtitle">Découvrez notre sélection actuellement disponible</p>
         </div>
-        <div class="movies-grid" id="moviesGrid">
-            <div style="grid-column:1/-1">
-                <div class="spinner"></div>
+
+        <!-- Films Carousel -->
+        <div class="films-carousel-container">
+            <button class="carousel-nav prev" id="carouselPrev">‹</button>
+            <button class="carousel-nav next" id="carouselNext">›</button>
+
+            <div class="films-carousel" id="filmsCarousel">
+                <!-- Loading state -->
+                <div class="carousel-loading">
+                    <div class="spinner"></div>
+                    <p>Chargement des films...</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Experience -->
+    <!-- Experience Section -->
     <section class="experience-section" id="experience">
         <div class="section-header">
-            <h2 class="section-title">L'EXPÉRIENCE</h2>
-            <p class="section-subtitle">UN CINÉMA D'EXCEPTION</p>
+            <div class="section-badge">L'expérience Sylver Screen</div>
+            <h2 class="section-title">Confort & Technologie</h2>
+            <p class="section-subtitle">Une expérience cinématographique d'exception</p>
         </div>
+
         <div class="experience-grid">
             <div class="experience-item">
                 <div class="experience-icon">🎬</div>
-                <h3 class="experience-title">Projection 2K</h3>
-                <p class="experience-description">Image ultra-haute définition pour une netteté exceptionnelle.</p>
+                <h3 class="experience-title">Image 4K</h3>
+                <p class="experience-description">Projecteurs dernière génération pour une image d'une clarté
+                    exceptionnelle.</p>
             </div>
             <div class="experience-item">
-                <div class="experience-icon">🎵</div>
-                <h3 class="experience-title">Son Dolby</h3>
-                <p class="experience-description">Système audio immersif pour une expérience incomparable.</p>
+                <div class="experience-icon">🔊</div>
+                <h3 class="experience-title">Son Immersif</h3>
+                <p class="experience-description">Système audio Dolby Atmos pour une immersion totale.</p>
             </div>
             <div class="experience-item">
                 <div class="experience-icon">💺</div>
-                <h3 class="experience-title">Confort Premium</h3>
-                <p class="experience-description">60 fauteuils ergonomiques dans 2 salles climatisées.</p>
+                <h3 class="experience-title">Sièges Premium</h3>
+                <p class="experience-description">Fauteuils inclinables en cuir avec repose-pieds.</p>
             </div>
             <div class="experience-item">
-                <div class="experience-icon">🎫</div>
-                <h3 class="experience-title">Réservation en ligne</h3>
-                <p class="experience-description">Choisissez vos places et annulez jusqu'à 5 min avant.</p>
-            </div>
-            <div class="experience-item">
-                <div class="experience-icon">🇨🇲</div>
-                <h3 class="experience-title">Cinéma Camerounais</h3>
-                <p class="experience-description">Tous les jeudis, le meilleur du cinéma camerounais.</p>
-            </div>
-            <div class="experience-item">
-                <div class="experience-icon">📧</div>
-                <h3 class="experience-title">Notifications</h3>
-                <p class="experience-description">Programme hebdomadaire et nouveautés par email.</p>
+                <div class="experience-icon">🍿</div>
+                <h3 class="experience-title">Snack Bar</h3>
+                <p class="experience-description">Pop-corn frais, boissons et snacks de qualité.</p>
             </div>
         </div>
     </section>
@@ -128,43 +140,49 @@
     <footer id="contact">
         <div class="footer-content">
             <div class="footer-section">
-                <h3>Sylver Screen</h3>
+                <h3>Sylver Screen Cinema</h3>
                 <p>Douala Grand Mall<br>Route de l'Aéroport<br>Douala, Cameroun</p>
-                <p style="margin-top:1rem">Tél: +237 XXX XXX XXX<br><a href="/cdn-cgi/l/email-protection"
-                        class="__cf_email__"
-                        data-cfemail="52313d3c2633312612212b3e2437207f21312037373c7c313d3f">[email&#160;protected]</a>
-                </p>
+                <p style="margin-top:1rem">Tél: +237 XXX XXX XXX<br>Email: contact@sylverscreen.cm</p>
             </div>
             <div class="footer-section">
                 <h3>Navigation</h3>
                 <a href="#home">Accueil</a>
-                <a href="#movies">Films</a>
+                <a href="#films">Films</a>
                 <a href="#experience">Expérience</a>
                 <a href="#contact">Contact</a>
             </div>
             <div class="footer-section">
-                <h3>Horaires</h3>
-                <p>Lundi - Dimanche<br>10h00 - 23h00</p>
+                <h3>Informations</h3>
+                <a href="#">Tarifs</a>
+                <a href="#">Horaires</a>
+                <a href="#">FAQ</a>
+                <a href="#">CGV</a>
             </div>
             <div class="footer-section">
-                <h3>Newsletter</h3>
-                <p>Recevez nos actualités</p>
-                <div class="newsletter-form">
-                    <input type="email" placeholder="Votre email" id="newsletterEmail">
-                    <button class="btn-white" onclick="subscribeNewsletter()">OK</button>
+                <h3>Suivez-nous</h3>
+                <div class="social-links">
+                    <a href="#">Facebook</a>
+                    <a href="#">Instagram</a>
+                    <a href="#">Twitter</a>
                 </div>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2025 Sylver Screen Cinema. Tous droits réservés. | 100% Camerounais 🇨🇲</p>
+            <p>&copy; 2026 Sylver Screen Cinema. Tous droits réservés.</p>
         </div>
     </footer>
 
+    <!-- Theme Toggle -->
+    <div class="theme-toggle" onclick="toggleTheme()" title="Changer de thème">
+        <span class="theme-toggle-icon" id="themeIcon">🌙</span>
+    </div>
+
+    <!-- Modals -->
     <!-- Login Modal -->
     <div class="modal" id="loginModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>CONNEXION</h2>
+                <h2 class="modal-title">CONNEXION</h2>
                 <button class="close-modal" onclick="closeModal('loginModal')">&times;</button>
             </div>
             <div class="modal-body">
@@ -176,17 +194,18 @@
                     <div class="form-group">
                         <label>Mot de passe</label>
                         <div class="password-wrapper">
-                            <input type="password" id="loginPassword" placeholder="••••••••" required>
+                            <input type="password" id="loginPassword" placeholder="Votre mot de passe" required>
                             <button type="button" class="toggle-password"
                                 onclick="togglePassword('loginPassword', this)">👁</button>
                         </div>
                     </div>
-                    <button type="submit" class="btn-white" style="width:100%; padding:1rem; font-size:1rem;">
+                    <button type="submit" class="btn-white" style="width:100%; padding:1rem;">
                         Se connecter
                     </button>
-                    <p style="text-align:center; margin-top:1.5rem; color:var(--text-gray); font-size:0.88rem;">
-                        Pas de compte ? <a href="#" onclick="openRegisterModal()"
-                            style="color:var(--white);">S'inscrire</a>
+                    <p style="text-align:center; margin-top:1.5rem; color:var(--text-secondary); font-size:0.88rem;">
+                        Pas encore de compte ? <a href="#"
+                            onclick="event.preventDefault(); closeModal('loginModal'); openRegisterModal();"
+                            style="color:var(--accent-primary);">S'inscrire</a>
                     </p>
                 </form>
             </div>
@@ -197,7 +216,7 @@
     <div class="modal" id="registerModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h2>INSCRIPTION</h2>
+                <h2 class="modal-title">INSCRIPTION</h2>
                 <button class="close-modal" onclick="closeModal('registerModal')">&times;</button>
             </div>
             <div class="modal-body">
@@ -229,203 +248,51 @@
                             <span>Recevoir les nouveautés par email</span>
                         </label>
                     </div>
-                    <button type="submit" class="btn-white" style="width:100%; padding:1rem; font-size:1rem;">
+                    <button type="submit" class="btn-white" style="width:100%; padding:1rem;">
                         Créer mon compte
                     </button>
-                    <p style="text-align:center; margin-top:1.5rem; color:var(--text-gray); font-size:0.88rem;">
-                        Déjà un compte ? <a href="#" onclick="openLoginModal()" style="color:var(--white);">Se
-                            connecter</a>
+                    <p style="text-align:center; margin-top:1.5rem; color:var(--text-secondary); font-size:0.88rem;">
+                        Déjà un compte ? <a href="#"
+                            onclick="event.preventDefault(); closeModal('registerModal'); openLoginModal();"
+                            style="color:var(--accent-primary);">Se connecter</a>
                     </p>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Movie Details Modal -->
-    <div class="modal" id="movieModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="movieTitle"></h2>
-                <button class="close-modal" onclick="closeModal('movieModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div id="movieDetails"></div>
-                <div class="rating-stars" id="userRating">
-                    <span class="star" onclick="rateMovie(1)">★</span>
-                    <span class="star" onclick="rateMovie(2)">★</span>
-                    <span class="star" onclick="rateMovie(3)">★</span>
-                    <span class="star" onclick="rateMovie(4)">★</span>
-                    <span class="star" onclick="rateMovie(5)">★</span>
-                </div>
-                <p style="color:var(--text-gray); text-align:center; margin-bottom:1.5rem; font-size:0.82rem;">Cliquez
-                    pour noter ce film</p>
-                <button class="btn-white" style="width:100%; padding:1rem;" onclick="openBookingModal()">Réserver des
-                    places</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Booking Modal -->
-    <div class="modal" id="bookingModal">
-        <div class="modal-content" style="max-width:620px;">
-            <div class="modal-header">
-                <h2>RÉSERVATION</h2>
-                <button class="close-modal" onclick="closeModal('bookingModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Film</label>
-                    <select id="bookingMovie" onchange="updateShowtimes()"></select>
-                </div>
-                <div class="form-group">
-                    <label>Séance</label>
-                    <select id="bookingShowtime" onchange="loadSeats()"></select>
-                </div>
-
-                <!-- Types de billets avec compteurs -->
-                <div class="form-group">
-                    <label>Nombre de billets par type</label>
-                    <div style="display:grid; gap:1rem;">
-                        <!-- Adulte -->
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:center; background:var(--black); border:1px solid var(--border-gray); padding:1rem;">
-                            <div>
-                                <div style="font-weight:700; margin-bottom:0.25rem;">🧑 Adulte</div>
-                                <div style="font-size:0.9rem; color:var(--text-gray);" id="price-adulte">3 000 FCFA
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:0.75rem; align-items:center;">
-                                <button type="button" onclick="changeTicketQty('adulte', -1)"
-                                    style="width:35px; height:35px; background:var(--black); border:1px solid var(--white); color:var(--white); font-size:1.2rem; cursor:pointer; font-weight:700;">−</button>
-                                <span id="qty-adulte"
-                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
-                                <button type="button" onclick="changeTicketQty('adulte', 1)"
-                                    style="width:35px; height:35px; background:var(--white); border:none; color:var(--black); font-size:1.2rem; cursor:pointer; font-weight:700;">+</button>
-                            </div>
-                        </div>
-                        <!-- Enfant -->
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:center; background:var(--black); border:1px solid var(--border-gray); padding:1rem;">
-                            <div>
-                                <div style="font-weight:700; margin-bottom:0.25rem;">👶 Enfant</div>
-                                <div style="font-size:0.9rem; color:var(--text-gray);" id="price-enfant">2 000 FCFA
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:0.75rem; align-items:center;">
-                                <button type="button" onclick="changeTicketQty('enfant', -1)"
-                                    style="width:35px; height:35px; background:var(--black); border:1px solid var(--white); color:var(--white); font-size:1.2rem; cursor:pointer; font-weight:700;">−</button>
-                                <span id="qty-enfant"
-                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
-                                <button type="button" onclick="changeTicketQty('enfant', 1)"
-                                    style="width:35px; height:35px; background:var(--white); border:none; color:var(--black); font-size:1.2rem; cursor:pointer; font-weight:700;">+</button>
-                            </div>
-                        </div>
-                        <!-- Popcorn -->
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:center; background:var(--black); border:1px solid var(--border-gray); padding:1rem;">
-                            <div>
-                                <div style="font-weight:700; margin-bottom:0.25rem;">🍿 Adulte + Popcorn</div>
-                                <div style="font-size:0.9rem; color:var(--text-gray);" id="price-popcorn">4 000 FCFA
-                                </div>
-                            </div>
-                            <div style="display:flex; gap:0.75rem; align-items:center;">
-                                <button type="button" onclick="changeTicketQty('popcorn', -1)"
-                                    style="width:35px; height:35px; background:var(--black); border:1px solid var(--white); color:var(--white); font-size:1.2rem; cursor:pointer; font-weight:700;">−</button>
-                                <span id="qty-popcorn"
-                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
-                                <button type="button" onclick="changeTicketQty('popcorn', 1)"
-                                    style="width:35px; height:35px; background:var(--white); border:none; color:var(--black); font-size:1.2rem; cursor:pointer; font-weight:700;">+</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="screen-label">ÉCRAN</div>
-                <div class="screen"></div>
-                <div class="seats-grid" id="seatsGrid"></div>
-                <div class="seats-legend">
-                    <div class="legend-item">
-                        <div class="legend-dot"
-                            style="background:var(--light-gray); border:1px solid var(--border-gray)"></div>
-                        Disponible
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background:var(--white)"></div>
-                        Sélectionné
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-dot" style="background:#2a2a2a; opacity:0.5"></div>
-                        Occupé
-                    </div>
-                </div>
-
-                <div class="booking-summary">
-                    <div id="ticketBreakdown" style="margin-bottom:1rem; font-size:0.9rem; color:var(--text-gray);">
-                    </div>
-                    <div class="summary-item">
-                        <span>Total places</span>
-                        <span id="selectedSeatsCount">0</span>
-                    </div>
-                    <div class="summary-item summary-total">
-                        <span>Total</span>
-                        <span id="totalPrice">0 FCFA</span>
-                    </div>
-                </div>
-                <div class="info-banner">ℹ️ Annulation gratuite jusqu'à 5 minutes avant la séance</div>
-                <button class="btn-white" style="width:100%; padding:1rem;" onclick="confirmBooking()">Confirmer la
-                    réservation</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dialog Overlay -->
-    <div id="dialogOverlay"
-        style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:9999; align-items:center; justify-content:center;">
-        <div
-            style="background:var(--gray); border:1px solid var(--border-gray); max-width:450px; width:90%; padding:2.5rem; text-align:center; position:relative;">
-            <button onclick="closeDialog()"
-                style="position:absolute; top:1rem; right:1rem; background:none; border:none; color:var(--white); font-size:1.8rem; cursor:pointer; line-height:1; transition:transform 0.2s;"
-                onmouseover="this.style.transform='rotate(90deg)'"
-                onmouseout="this.style.transform='rotate(0deg)'">&times;</button>
-            <div id="dialogIcon" style="font-size:3.5rem; margin-bottom:1rem;"></div>
-            <h3 id="dialogTitle"
-                style="font-family:'Playfair Display',serif; font-size:1.6rem; margin-bottom:1rem; letter-spacing:1px;">
-            </h3>
-            <p id="dialogMessage"
-                style="color:var(--text-gray); line-height:1.7; margin-bottom:2rem; white-space:pre-line;"></p>
-            <div id="dialogButtons" style="display:flex; gap:1rem; justify-content:center; flex-wrap:wrap;"></div>
-        </div>
-    </div>
-
-    <!-- Mon Compte Modal -->
+    <!-- Account Modal -->
     <div class="modal" id="accountModal">
         <div class="modal-content" style="max-width:700px;">
             <div class="modal-header">
-                <h2>MON COMPTE</h2>
+                <h2 class="modal-title">MON COMPTE</h2>
                 <button class="close-modal" onclick="closeModal('accountModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="profileView">
-                    <div
-                        style="margin-bottom:2rem; padding:1.5rem; background:var(--black); border:1px solid var(--border-gray);">
-                        <div
-                            style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;">
-                            <div>
-                                <p style="margin-bottom:0.5rem;"><strong>Nom :</strong> <span id="accountName"></span>
-                                </p>
-                                <p style="margin-bottom:0.5rem;"><strong>Email :</strong> <span
-                                        id="accountEmail"></span></p>
-                                <p><strong>Téléphone :</strong> <span id="accountPhone"></span></p>
+                    <div class="account-section">
+                        <h3>Informations personnelles</h3>
+                        <div class="account-info">
+                            <div class="info-row">
+                                <span class="info-label">Nom</span>
+                                <span class="info-value" id="accountName"></span>
                             </div>
-                            <button class="btn-white" onclick="showEditProfile()"
-                                style="padding:0.5rem 1rem; font-size:0.85rem;">✏️ Modifier</button>
+                            <div class="info-row">
+                                <span class="info-label">Email</span>
+                                <span class="info-value" id="accountEmail"></span>
+                            </div>
+                            <div class="info-row">
+                                <span class="info-label">Téléphone</span>
+                                <span class="info-value" id="accountPhone"></span>
+                            </div>
                         </div>
+                        <button class="btn-outline" style="margin-top:1rem;" onclick="showEditProfile()">Modifier mes
+                            informations</button>
                     </div>
                 </div>
 
                 <div id="profileEdit" style="display:none;">
-                    <form onsubmit="saveProfile(event)"
-                        style="margin-bottom:2rem; padding:1.5rem; background:var(--black); border:1px solid var(--border-gray);">
+                    <form onsubmit="updateProfile(event)">
                         <div class="form-group">
                             <label>Nom complet</label>
                             <input type="text" id="editName" required>
@@ -439,16 +306,14 @@
                             <input type="tel" id="editPhone" required>
                         </div>
                         <div style="display:flex; gap:1rem;">
-                            <button type="button" class="btn-black" onclick="cancelEditProfile()"
-                                style="flex:1;">Annuler</button>
                             <button type="submit" class="btn-white" style="flex:1;">Enregistrer</button>
+                            <button type="button" class="btn-outline" style="flex:1;"
+                                onclick="cancelEditProfile()">Annuler</button>
                         </div>
                     </form>
                 </div>
 
-                <h3
-                    style="font-family:'Playfair Display',serif; font-size:1.4rem; margin-bottom:1.5rem; letter-spacing:1px;">
-                    MES RÉSERVATIONS ACTIVES</h3>
+                <h3 style="margin:2rem 0 1rem;">Mes réservations</h3>
                 <div id="accountBookings"></div>
                 <button class="btn-black" style="width:100%; margin-top:2rem;"
                     onclick="confirmLogout()">Déconnexion</button>
@@ -456,44 +321,6 @@
         </div>
     </div>
 
-    <script>
-        function toggleMenu() {
-            document.getElementById('hamburger').classList.toggle('open');
-            document.getElementById('mobileMenu').classList.toggle('open');
-        }
-        function closeMenu() {
-            document.getElementById('hamburger').classList.remove('open');
-            document.getElementById('mobileMenu').classList.remove('open');
-        }
-        window.addEventListener('scroll', closeMenu);
-
-        function togglePassword(inputId, btn) {
-            const input = document.getElementById(inputId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                btn.textContent = '🙈';
-            } else {
-                input.type = 'password';
-                btn.textContent = '👁';
-            }
-        }
-
-        function closeDialog() {
-            const overlay = document.getElementById('dialogOverlay');
-            if (overlay) {
-                overlay.style.display = 'none';
-                overlay.classList.remove('active');
-            }
-        }
-
-        // Clic en dehors ferme le dialogue
-        document.addEventListener('click', function (e) {
-            const overlay = document.getElementById('dialogOverlay');
-            if (overlay && e.target === overlay) {
-                closeDialog();
-            }
-        });
-    </script>
     <script src="app.js"></script>
 </body>
 
