@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
@@ -10,7 +10,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
@@ -31,11 +31,11 @@
     <!-- Header -->
     <header>
         <nav>
-            <div class="logo" onclick="window.location.href='index.html'">SYLVER SCREEN</div>
+            <div class="logo">SYLVER SCREEN</div>
             <div class="nav-links" id="navLinks">
                 <a href="#home">Accueil</a>
                 <a href="#films">Films à l'affiche</a>
-                <a href="#experience">L'expérience</a>
+                <a href="#experience">Expérience</a>
                 <a href="#contact">Contact</a>
                 <button class="btn-white" id="loginBtn" onclick="openLoginModal()">Connexion</button>
                 <button class="btn-black" id="registerBtn" onclick="openRegisterModal()">S'inscrire</button>
@@ -50,7 +50,7 @@
     <div class="mobile-menu" id="mobileMenu">
         <a href="#home" onclick="toggleMenu()">Accueil</a>
         <a href="#films" onclick="toggleMenu()">Films à l'affiche</a>
-        <a href="#experience" onclick="toggleMenu()">L'expérience</a>
+        <a href="#experience" onclick="toggleMenu()">Expérience</a>
         <a href="#contact" onclick="toggleMenu()">Contact</a>
         <div class="mobile-menu-btns">
             <button class="btn-white" onclick="toggleMenu(); openLoginModal()">Connexion</button>
@@ -80,7 +80,7 @@
         </div>
     </section>
 
-    <!-- Films Slider Section (Style Grand Rex) -->
+    <!-- Films Carousel Section -->
     <section class="films-slider-section" id="films">
         <div class="section-header">
             <div class="section-badge">À l'affiche</div>
@@ -88,13 +88,11 @@
             <p class="section-subtitle">Découvrez notre sélection actuellement disponible</p>
         </div>
 
-        <!-- Films Carousel -->
         <div class="films-carousel-container">
             <button class="carousel-nav prev" id="carouselPrev">‹</button>
             <button class="carousel-nav next" id="carouselNext">›</button>
 
             <div class="films-carousel" id="filmsCarousel">
-                <!-- Loading state -->
                 <div class="carousel-loading">
                     <div class="spinner"></div>
                     <p>Chargement des films...</p>
@@ -177,7 +175,6 @@
         <span class="theme-toggle-icon" id="themeIcon">🌙</span>
     </div>
 
-    <!-- Modals -->
     <!-- Login Modal -->
     <div class="modal" id="loginModal">
         <div class="modal-content">
@@ -257,6 +254,121 @@
                             style="color:var(--accent-primary);">Se connecter</a>
                     </p>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Movie Details Modal -->
+    <div class="modal" id="movieModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="movieTitle">Film</h2>
+                <button class="close-modal" onclick="closeModal('movieModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="movieDetails"></div>
+                <div class="rating-stars" id="userRating">
+                    <span class="star" onclick="rateMovie(1)">★</span>
+                    <span class="star" onclick="rateMovie(2)">★</span>
+                    <span class="star" onclick="rateMovie(3)">★</span>
+                    <span class="star" onclick="rateMovie(4)">★</span>
+                    <span class="star" onclick="rateMovie(5)">★</span>
+                </div>
+                <p style="color:var(--text-secondary); text-align:center; margin-bottom:1.5rem; font-size:0.82rem;">
+                    Cliquez pour noter ce film</p>
+                <button class="btn-white" style="width:100%; padding:1rem;" onclick="openBookingModal()">Réserver des
+                    places</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div class="modal" id="bookingModal">
+        <div class="modal-content" style="max-width:620px;">
+            <div class="modal-header">
+                <h2 class="modal-title">RÉSERVATION</h2>
+                <button class="close-modal" onclick="closeModal('bookingModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Film</label>
+                    <select id="bookingMovie" onchange="updateShowtimes()"></select>
+                </div>
+                <div class="form-group">
+                    <label>Séance</label>
+                    <select id="bookingShowtime" onchange="loadSeats()"></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Nombre de billets par type</label>
+                    <div style="display:grid; gap:1rem;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-primary); border:1px solid var(--border-color); padding:1rem; border-radius:8px;">
+                            <div>
+                                <div style="font-weight:600; margin-bottom:0.25rem;">🧑 Adulte</div>
+                                <div style="font-size:0.9rem; color:var(--text-secondary);" id="price-adulte">3 000 FCFA
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <button type="button" onclick="changeTicketQty('adulte', -1)"
+                                    style="width:35px; height:35px; background:var(--bg-primary); border:2px solid var(--accent-primary); color:var(--text-primary); font-size:1.2rem; cursor:pointer; font-weight:700; border-radius:50%;">−</button>
+                                <span id="qty-adulte"
+                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
+                                <button type="button" onclick="changeTicketQty('adulte', 1)"
+                                    style="width:35px; height:35px; background:var(--accent-primary); border:none; color:var(--bg-primary); font-size:1.2rem; cursor:pointer; font-weight:700; border-radius:50%;">+</button>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-primary); border:1px solid var(--border-color); padding:1rem; border-radius:8px;">
+                            <div>
+                                <div style="font-weight:600; margin-bottom:0.25rem;">👶 Enfant</div>
+                                <div style="font-size:0.9rem; color:var(--text-secondary);" id="price-enfant">2 000 FCFA
+                                </div>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <button type="button" onclick="changeTicketQty('enfant', -1)"
+                                    style="width:35px; height:35px; background:var(--bg-primary); border:2px solid var(--accent-primary); color:var(--text-primary); font-size:1.2rem; cursor:pointer; font-weight:700; border-radius:50%;">−</button>
+                                <span id="qty-enfant"
+                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
+                                <button type="button" onclick="changeTicketQty('enfant', 1)"
+                                    style="width:35px; height:35px; background:var(--accent-primary); border:none; color:var(--bg-primary); font-size:1.2rem; cursor:pointer; font-weight:700; border-radius:50%;">+</button>
+                            </div>
+                        </div>
+
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; background:var(--bg-primary); border:1px solid var(--border-color); padding:1rem; border-radius:8px;">
+                            <div>
+                                <div style="font-weight:600; margin-bottom:0.25rem;">🍿 Popcorn</div>
+                                <div style="font-size:0.9rem; color:var(--text-secondary);" id="price-popcorn">4 000
+                                    FCFA</div>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; align-items:center;">
+                                <button type="button" onclick="changeTicketQty('popcorn', -1)"
+                                    style="width:35px; height:35px; background:var(--bg-primary); border:2px solid var(--accent-primary); color:var(--text-primary); font-size:1.2rem; cursor:pointer; font-weight:700; border-radius:50%;">−</button>
+                                <span id="qty-popcorn"
+                                    style="min-width:30px; text-align:center; font-size:1.2rem; font-weight:700;">0</span>
+                                <button type="button" onclick="changeTicketQty('popcorn', 1)"
+                                    style="width:35px; height:35px; background:var(--accent-primary); border:none; color:var(--bg-primary); font-size:1.2rem; cursor:pointer; font-weight:700; border-radius:50%;">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="background:var(--bg-secondary); padding:1.5rem; border-radius:8px; border:2px solid var(--border-color); margin:1.5rem 0;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <strong style="font-size:1.1rem;">Total</strong>
+                        <strong style="font-size:1.5rem; color:var(--accent-primary);" id="total-price">0 FCFA</strong>
+                    </div>
+                </div>
+
+                <div id="seatsGrid"
+                    style="display:grid; grid-template-columns:repeat(10, 1fr); gap:8px; margin:2rem 0;"></div>
+
+                <button class="btn-white" style="width:100%; padding:1rem; font-size:1rem;" onclick="confirmBooking()">
+                    Confirmer la réservation
+                </button>
             </div>
         </div>
     </div>
