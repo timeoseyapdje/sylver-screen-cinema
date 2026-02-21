@@ -40,10 +40,15 @@ async function loadFilmDetails() {
         document.getElementById('filmRatingBadge').textContent = film.rating ? `★ ${film.rating}/5` : '★ N/A';
         document.getElementById('filmSynopsis').textContent = film.description || 'Description non disponible.';
 
-        // Set hero background
+        // Set hero background + poster image
         if (film.poster_url) {
             const heroEl = document.querySelector('.film-hero-bg');
             heroEl.style.backgroundImage = `url('${film.poster_url}')`;
+            const posterImg = document.getElementById('filmPosterImg');
+            if (posterImg) {
+                posterImg.src = film.poster_url;
+                posterImg.alt = film.title;
+            }
         }
 
         // Set trailer

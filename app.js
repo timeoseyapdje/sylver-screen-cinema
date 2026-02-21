@@ -96,12 +96,16 @@ function togglePassword(inputId, button) {
 
 document.addEventListener('DOMContentLoaded', function () {
     checkAuth();
-    loadMovies();
     loadTicketPrices();
 
-    // Load films carousel if element exists
+    // Load films carousel if element exists (index.html only)
     if (document.getElementById('filmsCarousel')) {
         loadFilmsCarousel();
+    }
+
+    // Load movies grid only if element exists (index.html only)
+    if (document.getElementById('moviesGrid')) {
+        loadMovies();
     }
 });
 

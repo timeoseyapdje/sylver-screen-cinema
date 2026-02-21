@@ -413,6 +413,34 @@ app.delete('/api/showtimes/:id', authenticateToken, isAdmin, async (req, res) =>
 
 // ========== BOOKINGS ROUTES ==========
 
+// Get occupied seats for a showtime
+app.get('/api/showtimes/:id/seats', async (req, res) => {
+    try {
+        const showtimeResult = await pool.query('SELECT total_seats FROM showtimes WHERE id = $1', [req.params.id]);
+        if (showtimeResult.rows.length === 0) return res.status(404).json({ error: 'Séance non trouvée' });
+
+        const bookingsResult = await pool.query(
+            "SELECT seats FROM bookings WHERE showtime_id = $1 AND status != 'cancelled'",
+            [req.params.id]
+        );
+
+        const occupiedSeats = [];
+        bookingsResult.rows.forEach(b => {
+            if (b.seats) {
+                b.seats.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n)).forEach(n => occupiedSeats.push(n));
+            }
+        });
+
+        res.json({
+            occupiedSeats,
+            totalSeats: showtimeResult.rows[0].total_seats || 150
+        });
+    } catch (error) {
+        console.error('Error fetching seats:', error);
+        res.status(500).json({ error: 'Erreur lors du chargement des places' });
+    }
+});
+
 app.post('/api/bookings', authenticateToken, async (req, res) => {
     const { showtime_id, seats, tickets, total_price } = req.body;
     const user_id = req.user.id;
