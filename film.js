@@ -1,12 +1,8 @@
 // film.js - Film Detail Page Logic
-
-const API_URL = window.location.hostname === 'localhost' ? 'http://localhost:3000/api' : '/api';
+// Note: API_URL, selectedSeats, ticketQuantities, ticketPrices sont déclarés dans app.js
 
 let currentFilmId = null;
 let currentShowtime = null;
-let selectedSeats = [];
-let ticketQuantities = { adulte: 0, enfant: 0, popcorn: 0 };
-let ticketPrices = { adulte: 3000, enfant: 2000, popcorn: 4000 };
 
 // Get film ID from URL
 function getFilmIdFromURL() {
