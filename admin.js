@@ -164,27 +164,13 @@ function toggleArchive(archiveId) {
 
 // ========== MOVIES ==========
 
-function previewPoster(input) {
+function previewPosterUrl(url) {
     const preview = document.getElementById('posterPreview');
-    const file = input.files[0];
-
-    if (file) {
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('L\'image doit faire moins de 5 MB', 'error');
-            input.value = '';
-            preview.innerHTML = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            document.getElementById('moviePoster').value = e.target.result;
-            preview.innerHTML = `<img src="${e.target.result}" style="max-width:200px; max-height:300px; border:1px solid #333;">`;
-        };
-        reader.readAsDataURL(file);
-    } else {
+    if (!url || url.trim() === '') {
         preview.innerHTML = '';
+        return;
     }
+    preview.innerHTML = `<img src="${url}" alt="Aperçu" style="max-width:150px; max-height:220px; object-fit:cover; border:1px solid #333; border-radius:6px;" onerror="this.parentElement.innerHTML='<p style=color:#e55>URL invalide ou image inaccessible</p>'">`;
 }
 
 async function loadMovies() {
@@ -240,7 +226,6 @@ function openAddMovieModal() {
     document.getElementById('movieGenre').value = '';
     document.getElementById('movieDuration').value = '';
     document.getElementById('moviePoster').value = '';
-    document.getElementById('moviePosterFile').value = '';
     document.getElementById('posterPreview').innerHTML = '';
     document.getElementById('movieReleaseDate').value = '';
     document.getElementById('movieEndDate').value = '';
@@ -257,15 +242,9 @@ function editMovie(movieId) {
     document.getElementById('movieGenre').value = movie.genre;
     document.getElementById('movieDuration').value = movie.duration;
     document.getElementById('moviePoster').value = movie.poster_url || '';
-    document.getElementById('moviePosterFile').value = '';
 
     // Show existing poster
-    const preview = document.getElementById('posterPreview');
-    if (movie.poster_url) {
-        preview.innerHTML = `<img src="${movie.poster_url}" style="max-width:200px; max-height:300px; border:1px solid #333;">`;
-    } else {
-        preview.innerHTML = '';
-    }
+    previewPosterUrl(movie.poster_url || '');
 
     document.getElementById('movieReleaseDate').value = movie.release_date || '';
     document.getElementById('movieEndDate').value = movie.end_date || '';
@@ -756,21 +735,19 @@ async function loadPrices() {
             const enfantInput = document.getElementById('priceEnfant');
             const popcornInput = document.getElementById('pricePopcorn');
 
-            if (adulteInput) {
-                adulteInput.value = '';
-                adulteInput.placeholder = `Actuel : ${(prices.adulte || 3000).toLocaleString('fr-FR')} FCFA`;
-            }
-            if (enfantInput) {
-                enfantInput.value = '';
-                enfantInput.placeholder = `Actuel : ${(prices.enfant || 2000).toLocaleString('fr-FR')} FCFA`;
-            }
-            if (popcornInput) {
-                popcornInput.value = '';
-                popcornInput.placeholder = `Actuel : ${(prices.popcorn || 4000).toLocaleString('fr-FR')} FCFA`;
-            }
+            if (adulteInput) adulteInput.value = prices.adulte || 3000;
+            if (enfantInput) enfantInput.value = prices.enfant || 2000;
+            if (popcornInput) popcornInput.value = prices.popcorn || 4000;
         }
     } catch (e) {
         console.error('Could not load prices');
+        // Fallback to defaults
+        const adulteInput = document.getElementById('priceAdulte');
+        const enfantInput = document.getElementById('priceEnfant');
+        const popcornInput = document.getElementById('pricePopcorn');
+        if (adulteInput) adulteInput.value = 3000;
+        if (enfantInput) enfantInput.value = 2000;
+        if (popcornInput) popcornInput.value = 4000;
     }
 }
 
@@ -779,37 +756,25 @@ async function savePrices() {
     const enfant = parseInt(document.getElementById('priceEnfant').value);
     const popcorn = parseInt(document.getElementById('pricePopcorn').value);
 
-    // Valider que au moins UN prix est renseigné
-    if (!adulte && !enfant && !popcorn) {
-        showToast('Veuillez entrer au moins un prix', 'error');
+    if (isNaN(adulte) || isNaN(enfant) || isNaN(popcorn)) {
+        showToast('Veuillez renseigner tous les prix', 'error');
         return;
     }
 
-    // Valider que les prix renseignés sont >= 500
-    if ((adulte && adulte < 500) || (enfant && enfant < 500) || (popcorn && popcorn < 500)) {
+    if (adulte < 500 || enfant < 500 || popcorn < 500) {
         showToast('Les prix doivent être au minimum 500 FCFA', 'error');
         return;
     }
-
-    // Créer objet avec seulement les prix modifiés
-    const updates = {};
-    if (adulte) updates.adulte = adulte;
-    if (enfant) updates.enfant = enfant;
-    if (popcorn) updates.popcorn = popcorn;
 
     try {
         const response = await fetch(`${API_URL}/admin/prices`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-            body: JSON.stringify(updates)
+            body: JSON.stringify({ adulte, enfant, popcorn })
         });
 
         if (response.ok) {
-            const messages = [];
-            if (adulte) messages.push(`Adulte : ${adulte.toLocaleString('fr-FR')}`);
-            if (enfant) messages.push(`Enfant : ${enfant.toLocaleString('fr-FR')}`);
-            if (popcorn) messages.push(`Popcorn : ${popcorn.toLocaleString('fr-FR')}`);
-            showToast(`✅ Tarifs mis à jour : ${messages.join(' · ')}`);
+            showToast(`✅ Tarifs mis à jour — Adulte : ${adulte.toLocaleString('fr-FR')} · Enfant : ${enfant.toLocaleString('fr-FR')} · Popcorn : ${popcorn.toLocaleString('fr-FR')} FCFA`);
             await loadPrices();
         } else {
             showToast('Erreur lors de la mise à jour des tarifs', 'error');

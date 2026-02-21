@@ -294,11 +294,13 @@
                             <input type="number" id="movieDuration" required>
                         </div>
                         <div class="form-group">
-                            <label>Affiche du film</label>
-                            <input type="file" id="moviePosterFile" accept="image/*" onchange="previewPoster(this)"
-                                style="padding:0.5rem; cursor:pointer;">
+                            <label>Affiche du film (URL)</label>
+                            <input type="text" id="moviePoster" placeholder="https://image.tmdb.org/t/p/w500/..."
+                                oninput="previewPosterUrl(this.value)">
+                            <p style="font-size:0.75rem; color:#888; margin-top:4px;">💡 Utilisez une URL d'image (TMDB,
+                                Unsplash, etc.). <a href="https://www.themoviedb.org" target="_blank"
+                                    style="color:var(--accent-primary)">Trouver sur TMDB →</a></p>
                             <div id="posterPreview" style="margin-top:1rem; text-align:center;"></div>
-                            <input type="hidden" id="moviePoster">
                         </div>
                         <div class="form-group">
                             <label>Date de sortie</label>

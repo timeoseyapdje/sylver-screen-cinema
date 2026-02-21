@@ -858,9 +858,13 @@ async function confirmBooking() {
 
 // ========== NEWSLETTER ==========
 
-async function subscribeNewsletter() {
+async function subscribeNewsletter(event) {
+    if (event) event.preventDefault();
     const email = document.getElementById('newsletterEmail').value;
     if (!email) { showToast('Veuillez entrer votre email', 'error'); return; }
+
+    const btn = document.querySelector('.newsletter-btn');
+    if (btn) { btn.textContent = '...'; btn.disabled = true; }
 
     try {
         const response = await fetch(`${API_URL}/newsletter/subscribe`, {
@@ -877,6 +881,8 @@ async function subscribeNewsletter() {
         }
     } catch (error) {
         showToast('Erreur de connexion', 'error');
+    } finally {
+        if (btn) { btn.textContent = 'S\'abonner'; btn.disabled = false; }
     }
 }
 

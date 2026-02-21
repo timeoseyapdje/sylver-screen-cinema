@@ -20,7 +20,8 @@ const pool = new Pool({
 
 // Middleware
 app.use(cors());
-app.use(bodyParser.json());
+app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: true }));
 app.use(express.static(__dirname));
 
 // Test database connection
@@ -107,6 +108,15 @@ async function initDatabase() {
             email TEXT UNIQUE NOT NULL,
             subscribed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
+
+        await pool.query(`CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+        await pool.query(`INSERT INTO settings (key, value) VALUES ('price_adulte', '3000') ON CONFLICT (key) DO NOTHING`);
+        await pool.query(`INSERT INTO settings (key, value) VALUES ('price_enfant', '2000') ON CONFLICT (key) DO NOTHING`);
+        await pool.query(`INSERT INTO settings (key, value) VALUES ('price_popcorn', '4000') ON CONFLICT (key) DO NOTHING`);
 
         const adminPassword = await bcrypt.hash('admin123', 10);
         await pool.query(`INSERT INTO users (name, email, phone, password, is_admin, phone_verified)
@@ -808,12 +818,14 @@ app.get('/api/settings/prices', async (req, res) => {
 app.put('/api/admin/prices', authenticateToken, isAdmin, async (req, res) => {
     const { adulte, enfant, popcorn } = req.body;
     try {
-        if (adulte) await pool.query(`UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'price_adulte'`, [adulte]);
-        if (enfant) await pool.query(`UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'price_enfant'`, [enfant]);
-        if (popcorn) await pool.query(`UPDATE settings SET value = $1, updated_at = NOW() WHERE key = 'price_popcorn'`, [popcorn]);
+        await ensureSettingsTable();
+        if (adulte) await pool.query(`INSERT INTO settings (key, value, updated_at) VALUES ('price_adulte', $1, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`, [adulte]);
+        if (enfant) await pool.query(`INSERT INTO settings (key, value, updated_at) VALUES ('price_enfant', $1, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`, [enfant]);
+        if (popcorn) await pool.query(`INSERT INTO settings (key, value, updated_at) VALUES ('price_popcorn', $1, NOW()) ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`, [popcorn]);
         console.log(`✅ Prices updated: Adulte=${adulte}, Enfant=${enfant}, Popcorn=${popcorn}`);
         res.json({ success: true, prices: { adulte, enfant, popcorn } });
     } catch (error) {
+        console.error('Price update error:', error);
         res.status(500).json({ error: 'Failed to update prices' });
     }
 });
