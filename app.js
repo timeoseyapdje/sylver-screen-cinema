@@ -1029,11 +1029,107 @@ function setupCarouselNavigation() {
 
     if (!carousel || !prevBtn || !nextBtn) return;
 
-    prevBtn.addEventListener('click', () => {
-        carousel.scrollBy({ left: -400, behavior: 'smooth' });
+    // Clone cards for infinite loop
+    const originalCards = Array.from(carousel.children);
+    if (originalCards.length === 0) return;
+
+    // Clone set avant et après
+    originalCards.forEach(card => {
+        const cloneBefore = card.cloneNode(true);
+        const cloneAfter = card.cloneNode(true);
+        cloneBefore.setAttribute('aria-hidden', 'true');
+        cloneAfter.setAttribute('aria-hidden', 'true');
+        carousel.insertBefore(cloneBefore, carousel.firstChild);
+        carousel.appendChild(cloneAfter);
     });
 
-    nextBtn.addEventListener('click', () => {
-        carousel.scrollBy({ left: 400, behavior: 'smooth' });
+    const allCards = Array.from(carousel.children);
+    const cardCount = originalCards.length;
+    let currentIndex = cardCount; // commence sur le premier vrai
+    let isAnimating = false;
+    let autoplayTimer = null;
+
+    function getCardWidth() {
+        const card = carousel.children[currentIndex];
+        if (!card) return 320;
+        const style = getComputedStyle(carousel);
+        const gap = parseInt(style.gap) || 32;
+        return card.offsetWidth + gap;
+    }
+
+    function goTo(index, animate = true) {
+        carousel.style.transition = animate ? 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none';
+        const cardWidth = getCardWidth();
+        carousel.style.transform = `translateX(-${index * cardWidth}px)`;
+        currentIndex = index;
+    }
+
+    // Init position sans animation
+    goTo(currentIndex, false);
+
+    // Après transition, repositionner silencieusement si on est sur un clone
+    carousel.addEventListener('transitionend', () => {
+        isAnimating = false;
+        if (currentIndex < cardCount) {
+            goTo(currentIndex + cardCount, false);
+        } else if (currentIndex >= cardCount * 2) {
+            goTo(currentIndex - cardCount, false);
+        }
     });
+
+    function slideNext() {
+        if (isAnimating) return;
+        isAnimating = true;
+        goTo(currentIndex + 1);
+    }
+
+    function slidePrev() {
+        if (isAnimating) return;
+        isAnimating = true;
+        goTo(currentIndex - 1);
+    }
+
+    nextBtn.addEventListener('click', () => {
+        resetAutoplay();
+        slideNext();
+    });
+
+    prevBtn.addEventListener('click', () => {
+        resetAutoplay();
+        slidePrev();
+    });
+
+    // Autoplay
+    function startAutoplay() {
+        autoplayTimer = setInterval(slideNext, 3500);
+    }
+
+    function resetAutoplay() {
+        clearInterval(autoplayTimer);
+        startAutoplay();
+    }
+
+    startAutoplay();
+
+    // Pause au survol
+    carousel.addEventListener('mouseenter', () => clearInterval(autoplayTimer));
+    carousel.addEventListener('mouseleave', startAutoplay);
+
+    // Touch/swipe support
+    let touchStartX = 0;
+    carousel.addEventListener('touchstart', e => {
+        touchStartX = e.touches[0].clientX;
+        clearInterval(autoplayTimer);
+    }, { passive: true });
+
+    carousel.addEventListener('touchend', e => {
+        const diff = touchStartX - e.changedTouches[0].clientX;
+        if (Math.abs(diff) > 50) {
+            diff > 0 ? slideNext() : slidePrev();
+        }
+        startAutoplay();
+    }, { passive: true });
+
+    // Recalcul au resize
+    window.addEventListener('resize', () => goTo(currentIndex, false));
 }

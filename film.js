@@ -176,14 +176,14 @@ function selectShowtime() {
 }
 
 // Change ticket quantity
-function changeTicketQty(type, delta) {
+function changeFilmTicketQty(type, delta) {
     ticketQuantities[type] = Math.max(0, ticketQuantities[type] + delta);
     document.getElementById(`qty${type.charAt(0).toUpperCase() + type.slice(1)}`).textContent = ticketQuantities[type];
-    updateTotal();
+    updateFilmTotal();
 }
 
 // Update total
-function updateTotal() {
+function updateFilmTotal() {
     const total =
         ticketQuantities.adulte * ticketPrices.adulte +
         ticketQuantities.enfant * ticketPrices.enfant +
@@ -194,7 +194,7 @@ function updateTotal() {
 
 // Proceed to seats
 function proceedToSeats() {
-    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant;
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
 
     if (totalTickets === 0) {
         showToast('Veuillez sélectionner au moins un billet', 'error');
@@ -227,7 +227,7 @@ async function loadFilmSeats() {
 
         const totalSeats = currentShowtime.total_seats;
         const occupiedSeats = data.occupiedSeats || [];
-        const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant;
+        const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
 
         selectedSeats = [];
 
@@ -258,7 +258,7 @@ async function loadFilmSeats() {
 function toggleFilmSeat(seatNum, isOccupied) {
     if (isOccupied) return;
 
-    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant;
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
     const seatEl = document.querySelector(`[data-seat="${seatNum}"]`);
 
     if (selectedSeats.includes(seatNum)) {
@@ -280,7 +280,7 @@ function toggleFilmSeat(seatNum, isOccupied) {
 
 // Update seats display
 function updateSeatsDisplay() {
-    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant;
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
     const total =
         ticketQuantities.adulte * ticketPrices.adulte +
         ticketQuantities.enfant * ticketPrices.enfant +
@@ -294,7 +294,7 @@ function updateSeatsDisplay() {
 
 // Confirm booking
 async function confirmBooking() {
-    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant;
+    const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant + ticketQuantities.popcorn;
 
     if (selectedSeats.length !== totalTickets) {
         showToast(`Veuillez sélectionner ${totalTickets} place(s)`, 'error');
