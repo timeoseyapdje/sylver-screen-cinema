@@ -208,12 +208,12 @@ function proceedToSeats() {
     }
 
     // Load seats and open modal
-    loadSeats();
     openModal('seatsModal');
+    loadFilmSeats();
 }
 
-// Load seats
-async function loadSeats() {
+// Load seats (renamed to avoid conflict with app.js)
+async function loadFilmSeats() {
     if (!currentShowtime) return;
 
     try {
@@ -234,7 +234,7 @@ async function loadSeats() {
             html += `
                 <div class="seat ${isOccupied ? 'occupied' : ''}" 
                      data-seat="${i}" 
-                     onclick="toggleSeat(${i}, ${isOccupied})">
+                     onclick="toggleFilmSeat(${i}, ${isOccupied})">
                     ${i}
                 </div>
             `;
@@ -249,8 +249,8 @@ async function loadSeats() {
     }
 }
 
-// Toggle seat
-function toggleSeat(seatNum, isOccupied) {
+// Toggle seat (renamed to avoid conflict with app.js)
+function toggleFilmSeat(seatNum, isOccupied) {
     if (isOccupied) return;
 
     const totalTickets = ticketQuantities.adulte + ticketQuantities.enfant;

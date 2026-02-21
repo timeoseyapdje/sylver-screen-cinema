@@ -86,7 +86,7 @@ const movies = [
         genre: 'Musical / Fantasy',
         duration: 160,
         description: 'L\'histoire inédite des sorcières d\'Oz avant l\'arrivée de Dorothy. Avec Cynthia Erivo et Ariana Grande dans un spectacle musical époustouflant.',
-        poster_url: 'https://upload.wikimedia.org/wikipedia/en/5/5c/Wicked_2024_film_poster.jpg',
+        poster_url: 'https://image.tmdb.org/t/p/w500/xDGbZ0JJ3mYaGKy4Nzd9Kph6M9L.jpg',
         release_date: '2025-01-10',
         end_date: '2025-05-15'
     },
@@ -95,7 +95,7 @@ const movies = [
         genre: 'Animation / Aventure',
         duration: 100,
         description: 'Vaiana reçoit un appel inattendu de ses ancêtres et doit voyager vers des mers lointaines inexplorées pour une aventure épique.',
-        poster_url: 'https://upload.wikimedia.org/wikipedia/en/6/6a/Moana_2_poster.jpg',
+        poster_url: 'https://image.tmdb.org/t/p/w500/aLVkiINlIeCkcZIzb7XHzPYgO6L.jpg',
         release_date: '2025-01-05',
         end_date: '2025-04-20'
     },
@@ -104,7 +104,7 @@ const movies = [
         genre: 'Horreur / Gothique',
         duration: 132,
         description: 'Robert Eggers signe une réinterprétation gothique et terrifiante du mythe du comte Orlok. Un chef-d\'œuvre visuel.',
-        poster_url: 'https://upload.wikimedia.org/wikipedia/en/9/91/Nosferatu_2024_film_poster.jpg',
+        poster_url: 'https://image.tmdb.org/t/p/w500/5qGIxdEO841C0tdY8vOdLoRVrr0.jpg',
         release_date: '2025-01-15',
         end_date: '2025-03-30'
     },
@@ -113,7 +113,7 @@ const movies = [
         genre: 'Action / Super-héros',
         duration: 118,
         description: 'Sam Wilson endosse le bouclier de Captain America et se retrouve au cœur d\'un complot international qui menace le monde entier.',
-        poster_url: 'https://upload.wikimedia.org/wikipedia/en/b/b4/Captain_America_Brave_New_World_poster.jpg',
+        poster_url: 'https://image.tmdb.org/t/p/w500/pzIddUEMWhWzfvLI3TwxUG2wGoi.jpg',
         release_date: '2025-02-14',
         end_date: '2025-05-01'
     },
@@ -122,7 +122,7 @@ const movies = [
         genre: 'Science-Fiction',
         duration: 137,
         description: 'Un homme sacrifiable est envoyé en mission suicide sur une planète glaciale. Bong Joon-ho adapte le roman d\'Edward Ashton avec Robert Pattinson.',
-        poster_url: 'https://upload.wikimedia.org/wikipedia/en/5/5b/Mickey_17_film_poster.jpg',
+        poster_url: 'https://image.tmdb.org/t/p/w500/edMl7kHMGFMqsWFGpGJxhzmAIBM.jpg',
         release_date: '2025-03-07',
         end_date: '2025-05-30'
     },
@@ -131,7 +131,7 @@ const movies = [
         genre: 'Thriller / Espionnage',
         duration: 94,
         description: 'Un agent des services secrets doit déterminer si sa propre femme est une traîtresse. Steven Soderbergh dirige Cate Blanchett et Michael Fassbender.',
-        poster_url: 'https://upload.wikimedia.org/wikipedia/en/2/25/Black_Bag_2025_film_poster.jpg',
+        poster_url: 'https://image.tmdb.org/t/p/w500/4HodP7eFaXNAcMhLiGJspv2FPBm.jpg',
         release_date: '2025-03-14',
         end_date: '2025-05-20'
     }
