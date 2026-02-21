@@ -169,7 +169,7 @@ function selectShowtime() {
     document.getElementById('qtyAdulte').textContent = '0';
     document.getElementById('qtyEnfant').textContent = '0';
     document.getElementById('qtyPopcorn').textContent = '0';
-    updateTotal();
+    updateFilmTotal();
 
     // Show tickets selection
     document.getElementById('ticketsSelection').style.display = 'block';

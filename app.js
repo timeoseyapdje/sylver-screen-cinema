@@ -73,13 +73,31 @@ function closeDialog() {
 
 // ========== MOBILE MENU ==========
 
-function toggleMobileMenu() {
-    document.getElementById('mobileMenu').classList.toggle('open');
+function toggleMenu() {
+    const menu = document.getElementById('mobileMenu');
+    const hamburger = document.getElementById('hamburger');
+    if (!menu) return;
+    menu.classList.toggle('open');
+    if (hamburger) hamburger.classList.toggle('active');
 }
 
 function closeMobileMenu() {
-    document.getElementById('mobileMenu').classList.remove('open');
+    const menu = document.getElementById('mobileMenu');
+    const hamburger = document.getElementById('hamburger');
+    if (menu) menu.classList.remove('open');
+    if (hamburger) hamburger.classList.remove('active');
 }
+
+// Fermer le menu en cliquant en dehors
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('mobileMenu');
+    const hamburger = document.getElementById('hamburger');
+    if (menu && menu.classList.contains('open')) {
+        if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
+            closeMobileMenu();
+        }
+    }
+});
 
 function togglePassword(inputId, button) {
     const input = document.getElementById(inputId);

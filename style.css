@@ -312,6 +312,7 @@ nav {
     border: none;
     cursor: pointer;
     padding: 8px;
+    z-index: 1001;
 }
 
 .hamburger span {
@@ -320,6 +321,21 @@ nav {
     background: var(--text-primary);
     transition: all 0.3s ease;
     border-radius: 2px;
+    display: block;
+}
+
+/* Animation hamburger → croix */
+.hamburger.active span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+}
+
+.hamburger.active span:nth-child(2) {
+    opacity: 0;
+    transform: scaleX(0);
+}
+
+.hamburger.active span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
 }
 
 .mobile-menu {
@@ -1417,8 +1433,10 @@ footer {
 
 /* === RESPONSIVE === */
 @media (max-width: 768px) {
+
+    /* === NAV === */
     nav {
-        padding: 16px 24px;
+        padding: 14px 20px;
     }
 
     .nav-links {
@@ -1429,105 +1447,110 @@ footer {
         display: flex;
     }
 
-    .hero-home {
-        min-height: 70vh;
-        padding: 100px 24px 60px;
-    }
-
-    .hero-home h1 {
-        font-size: 2.5rem;
-    }
-
-    .hero-home p {
-        font-size: 1rem;
+    .container {
+        padding: 0 16px;
     }
 
     section {
-        padding: 60px 24px;
+        padding: 48px 0;
     }
 
     .section-title {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 
-    .films-carousel-container {
-        padding: 0 60px;
+    /* === HERO HOME === */
+    .hero-home {
+        min-height: 75vh;
+        padding: 90px 20px 50px;
+        text-align: center;
     }
 
-    .carousel-nav {
-        width: 48px;
-        height: 48px;
+    .hero-home h1 {
+        font-size: 2.2rem;
+        letter-spacing: 2px;
     }
 
-    .carousel-nav.prev {
-        left: 10px;
+    .hero-home p {
+        font-size: 0.95rem;
     }
 
-    .carousel-nav.next {
-        right: 10px;
+    .hero-btns {
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
     }
 
+    .hero-btns button,
+    .hero-btns .btn-white,
+    .hero-btns .btn-outline {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    /* === CAROUSEL === */
     .films-carousel-container {
         padding: 0 48px;
     }
 
+    .carousel-nav {
+        width: 40px;
+        height: 40px;
+        font-size: 1.4rem;
+    }
+
+    .carousel-nav.prev {
+        left: 6px;
+    }
+
+    .carousel-nav.next {
+        right: 6px;
+    }
+
     .film-card-carousel {
-        flex: 0 0 calc(100vw - 120px);
-        max-width: 320px;
+        flex: 0 0 calc(100vw - 110px);
+        max-width: 300px;
     }
 
+    .film-card-info {
+        padding: 14px;
+    }
+
+    .film-card-title {
+        font-size: 1rem;
+    }
+
+    .film-card-description {
+        -webkit-line-clamp: 2;
+    }
+
+    /* === MOVIES GRID === */
     .movies-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-        gap: 20px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
     }
 
-    .modal-content {
-        max-width: 100%;
-    }
-
-    .modal-header,
-    .modal-body {
-        padding: 24px;
-    }
-
-    .seats-grid {
-        grid-template-columns: repeat(6, 1fr);
-    }
-
-    .footer-content {
-        grid-template-columns: 1fr;
-        gap: 32px;
-    }
-
-    .theme-toggle {
-        bottom: 20px;
-        right: 20px;
-        width: 48px;
-        height: 48px;
-    }
-
-    .film-title {
-        font-size: 2rem;
-    }
-
-    .container {
-        padding: 0 20px;
-    }
-
+    /* === FILM PAGE HERO === */
     .film-hero {
         height: auto;
         min-height: 0;
     }
 
+    .film-hero-bg {
+        display: none;
+    }
+
     .film-hero-poster {
         position: relative;
         width: 100%;
-        height: 280px;
+        height: 55vw;
+        min-height: 220px;
+        max-height: 340px;
     }
 
     .film-hero-content {
         position: relative;
-        padding: 24px 0;
+        padding: 20px 0 28px;
     }
 
     .film-hero-info {
@@ -1536,45 +1559,233 @@ footer {
     }
 
     .film-title {
-        font-size: 2.2rem;
+        font-size: 1.8rem;
+        letter-spacing: -0.01em;
     }
 
-    .film-hero-bg {
-        display: none;
+    .film-meta {
+        gap: 8px;
+    }
+
+    .film-meta>span {
+        font-size: 0.78rem;
+        padding: 4px 10px;
+    }
+
+    /* === FILM CONTENT === */
+    .film-content {
+        padding: 32px 0 60px;
     }
 
     .film-grid {
         grid-template-columns: 1fr;
-        gap: 40px;
+        gap: 0;
+    }
+
+    .film-sidebar {
+        order: -1;
+        margin-bottom: 32px;
     }
 
     .booking-card-sticky {
         position: relative;
         top: 0;
+        padding: 20px;
+        border-radius: 12px;
+    }
+
+    .booking-card-sticky h3 {
+        font-size: 1.2rem;
+        margin-bottom: 16px;
     }
 
     .ticket-row {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px;
+        gap: 8px;
+    }
+
+    .ticket-info {
+        gap: 2px;
+    }
+
+    .ticket-type {
+        font-size: 0.9rem;
+    }
+
+    .ticket-price {
+        font-size: 0.8rem;
     }
 
     .ticket-counter {
-        align-self: flex-end;
+        gap: 10px;
+        flex-shrink: 0;
+    }
+
+    .ticket-counter button {
+        width: 32px;
+        height: 32px;
+        font-size: 1.1rem;
+    }
+
+    .ticket-counter span {
+        font-size: 1rem;
+        min-width: 20px;
+    }
+
+    .booking-total {
+        padding: 14px 16px;
+        margin: 16px 0;
+    }
+
+    .total-amount {
+        font-size: 1.2rem;
+    }
+
+    .btn-book-large {
+        padding: 14px;
+        font-size: 1rem;
+    }
+
+    /* === MODAL (bottom sheet) === */
+    .modal {
+        align-items: flex-end;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 100%;
+        max-height: 95dvh;
+        margin: 0;
+        border-radius: 20px 20px 0 0;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .modal-header,
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-body {
+        max-height: calc(95dvh - 70px);
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* === SEATS === */
+    .seats-grid {
+        grid-template-columns: repeat(8, 1fr);
+        gap: 5px;
+    }
+
+    .seat {
+        font-size: 0.6rem;
+        border-radius: 4px;
+    }
+
+    .screen-indicator {
+        margin-bottom: 20px;
+    }
+
+    .screen-label {
+        padding: 8px 40px;
+        font-size: 0.75rem;
+    }
+
+    .seats-legend {
+        flex-wrap: wrap;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    /* === FOOTER === */
+    .footer-content {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        text-align: center;
+    }
+
+    /* === MISC === */
+    .theme-toggle {
+        bottom: 16px;
+        right: 16px;
+        width: 44px;
+        height: 44px;
+    }
+
+    .rating-stars {
+        font-size: 1.6rem;
+    }
+
+    .section-title-small {
+        font-size: 1.2rem;
     }
 }
 
 @media (max-width: 480px) {
+
     .hero-home h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
 
     .hero-scroll {
         display: none;
     }
 
+    .films-carousel-container {
+        padding: 0 40px;
+    }
+
     .film-card-carousel {
-        flex: 0 0 220px;
+        flex: 0 0 calc(100vw - 90px);
+        max-width: 280px;
+    }
+
+    .carousel-nav {
+        width: 34px;
+        height: 34px;
+        font-size: 1.2rem;
+    }
+
+    .carousel-nav.prev {
+        left: 4px;
+    }
+
+    .carousel-nav.next {
+        right: 4px;
+    }
+
+    .film-title {
+        font-size: 1.5rem;
+    }
+
+    .film-hero-poster {
+        height: 60vw;
+    }
+
+    .seats-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 4px;
+    }
+
+    .seat {
+        font-size: 0.5rem;
+    }
+
+    .booking-card-sticky {
+        padding: 16px;
+    }
+
+    .movies-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
     }
 }
 

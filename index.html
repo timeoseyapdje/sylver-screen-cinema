@@ -48,13 +48,15 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="#home" onclick="toggleMenu()">Accueil</a>
-        <a href="#films" onclick="toggleMenu()">Films à l'affiche</a>
-        <a href="#experience" onclick="toggleMenu()">Expérience</a>
-        <a href="#contact" onclick="toggleMenu()">Contact</a>
+        <a href="#home" onclick="closeMobileMenu()">Accueil</a>
+        <a href="#films" onclick="closeMobileMenu()">Films à l'affiche</a>
+        <a href="#experience" onclick="closeMobileMenu()">Expérience</a>
+        <a href="#contact" onclick="closeMobileMenu()">Contact</a>
         <div class="mobile-menu-btns">
-            <button class="btn-white" onclick="toggleMenu(); openLoginModal()">Connexion</button>
-            <button class="btn-black" onclick="toggleMenu(); openRegisterModal()">S'inscrire</button>
+            <button class="btn-white" id="mobileLoginBtn"
+                onclick="closeMobileMenu(); openLoginModal()">Connexion</button>
+            <button class="btn-black" id="mobileRegisterBtn"
+                onclick="closeMobileMenu(); openRegisterModal()">S'inscrire</button>
         </div>
     </div>
 

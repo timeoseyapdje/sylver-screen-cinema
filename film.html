@@ -48,13 +48,15 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html#home" onclick="toggleMenu()">Accueil</a>
-        <a href="index.html#films" onclick="toggleMenu()">Films à l'affiche</a>
-        <a href="index.html#experience" onclick="toggleMenu()">L'expérience</a>
-        <a href="index.html#contact" onclick="toggleMenu()">Contact</a>
+        <a href="index.html#home" onclick="closeMobileMenu()">Accueil</a>
+        <a href="index.html#films" onclick="closeMobileMenu()">Films à l'affiche</a>
+        <a href="index.html#experience" onclick="closeMobileMenu()">L'expérience</a>
+        <a href="index.html#contact" onclick="closeMobileMenu()">Contact</a>
         <div class="mobile-menu-btns">
-            <button class="btn-white" onclick="toggleMenu(); openLoginModal()">Connexion</button>
-            <button class="btn-black" onclick="toggleMenu(); openRegisterModal()">S'inscrire</button>
+            <button class="btn-white" id="mobileLoginBtn"
+                onclick="closeMobileMenu(); openLoginModal()">Connexion</button>
+            <button class="btn-black" id="mobileRegisterBtn"
+                onclick="closeMobileMenu(); openRegisterModal()">S'inscrire</button>
         </div>
     </div>
 
@@ -150,9 +152,9 @@
                                     <span class="ticket-price" id="priceAdulte">3 000 FCFA</span>
                                 </div>
                                 <div class="ticket-counter">
-                                    <button type="button" onclick="changeTicketQty('adulte', -1)">−</button>
+                                    <button type="button" onclick="changeFilmTicketQty('adulte', -1)">−</button>
                                     <span id="qtyAdulte">0</span>
-                                    <button type="button" onclick="changeTicketQty('adulte', 1)">+</button>
+                                    <button type="button" onclick="changeFilmTicketQty('adulte', 1)">+</button>
                                 </div>
                             </div>
 
@@ -163,9 +165,9 @@
                                     <span class="ticket-price" id="priceEnfant">2 000 FCFA</span>
                                 </div>
                                 <div class="ticket-counter">
-                                    <button type="button" onclick="changeTicketQty('enfant', -1)">−</button>
+                                    <button type="button" onclick="changeFilmTicketQty('enfant', -1)">−</button>
                                     <span id="qtyEnfant">0</span>
-                                    <button type="button" onclick="changeTicketQty('enfant', 1)">+</button>
+                                    <button type="button" onclick="changeFilmTicketQty('enfant', 1)">+</button>
                                 </div>
                             </div>
 
@@ -176,9 +178,9 @@
                                     <span class="ticket-price" id="pricePopcorn">4 000 FCFA</span>
                                 </div>
                                 <div class="ticket-counter">
-                                    <button type="button" onclick="changeTicketQty('popcorn', -1)">−</button>
+                                    <button type="button" onclick="changeFilmTicketQty('popcorn', -1)">−</button>
                                     <span id="qtyPopcorn">0</span>
-                                    <button type="button" onclick="changeTicketQty('popcorn', 1)">+</button>
+                                    <button type="button" onclick="changeFilmTicketQty('popcorn', 1)">+</button>
                                 </div>
                             </div>
 
