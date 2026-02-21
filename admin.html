@@ -303,6 +303,15 @@
                             <div id="posterPreview" style="margin-top:1rem; text-align:center;"></div>
                         </div>
                         <div class="form-group">
+                            <label>Bande-annonce (URL YouTube ou autre)</label>
+                            <input type="text" id="movieTrailer" placeholder="https://www.youtube.com/watch?v=..."
+                                oninput="previewTrailerUrl(this.value)">
+                            <p style="font-size:0.75rem; color:#888; margin-top:4px;">💡 Collez l'URL YouTube, Vimeo ou
+                                tout autre lien vidéo. <a href="https://www.youtube.com" target="_blank"
+                                    style="color:var(--accent-primary)">Chercher sur YouTube →</a></p>
+                            <div id="trailerPreview" style="margin-top:1rem;"></div>
+                        </div>
+                        <div class="form-group">
                             <label>Date de sortie</label>
                             <input type="date" id="movieReleaseDate">
                         </div>

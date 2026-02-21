@@ -56,6 +56,7 @@ async function initDatabase() {
             duration INTEGER NOT NULL,
             description TEXT,
             poster_url TEXT,
+            trailer_url TEXT,
             rating REAL DEFAULT 0,
             votes_count INTEGER DEFAULT 0,
             release_date DATE,
@@ -327,11 +328,11 @@ app.get('/api/movies/:id', async (req, res) => {
 });
 
 app.post('/api/movies', authenticateToken, isAdmin, async (req, res) => {
-    const { title, genre, duration, description, poster_url, release_date, end_date } = req.body;
+    const { title, genre, duration, description, poster_url, trailer_url, release_date, end_date } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO movies (title, genre, duration, description, poster_url, release_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id',
-            [title, genre, duration, description, poster_url, release_date, end_date]
+            'INSERT INTO movies (title, genre, duration, description, poster_url, trailer_url, release_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
+            [title, genre, duration, description, poster_url, trailer_url, release_date, end_date]
         );
         res.json({ id: result.rows[0].id, message: 'Movie created successfully' });
     } catch (error) {
@@ -340,11 +341,11 @@ app.post('/api/movies', authenticateToken, isAdmin, async (req, res) => {
 });
 
 app.put('/api/movies/:id', authenticateToken, isAdmin, async (req, res) => {
-    const { title, genre, duration, description, poster_url, release_date, end_date, is_active } = req.body;
+    const { title, genre, duration, description, poster_url, trailer_url, release_date, end_date, is_active } = req.body;
     try {
         await pool.query(
-            'UPDATE movies SET title=$1, genre=$2, duration=$3, description=$4, poster_url=$5, release_date=$6, end_date=$7, is_active=$8 WHERE id=$9',
-            [title, genre, duration, description, poster_url, release_date, end_date, is_active, req.params.id]
+            'UPDATE movies SET title=$1, genre=$2, duration=$3, description=$4, poster_url=$5, trailer_url=$6, release_date=$7, end_date=$8, is_active=$9 WHERE id=$10',
+            [title, genre, duration, description, poster_url, trailer_url, release_date, end_date, is_active, req.params.id]
         );
         res.json({ message: 'Movie updated successfully' });
     } catch (error) {
@@ -789,6 +790,14 @@ async function ensureSettingsTable() {
     await pool.query(`INSERT INTO settings (key, value) VALUES ('price_adulte', '3000') ON CONFLICT (key) DO NOTHING`);
     await pool.query(`INSERT INTO settings (key, value) VALUES ('price_enfant', '2000') ON CONFLICT (key) DO NOTHING`);
     await pool.query(`INSERT INTO settings (key, value) VALUES ('price_popcorn', '4000') ON CONFLICT (key) DO NOTHING`);
+
+    // Migration: ajouter colonne trailer_url si elle n'existe pas
+    try {
+        await pool.query('ALTER TABLE movies ADD COLUMN IF NOT EXISTS trailer_url TEXT');
+        console.log('✅ Migration: colonne trailer_url ajoutée');
+    } catch (e) {
+        console.log('Migration trailer_url:', e.message);
+    }
 
     // Migration: ajouter colonne ticket_type si elle n'existe pas
     try {

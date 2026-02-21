@@ -153,12 +153,8 @@ function selectShowtime() {
     }
 
     currentShowtime = JSON.parse(option.dataset.showtime);
-    ticketPrices = {
-        adulte: parseInt(currentShowtime.price),
-        enfant: parseInt(currentShowtime.price) * 0.7,
-        popcorn: 4000
-    };
 
+    // Utilise les prix chargés depuis l'API (mis à jour depuis l'admin)
     // Update prices display
     document.getElementById('priceAdulte').textContent = `${ticketPrices.adulte.toLocaleString()} FCFA`;
     document.getElementById('priceEnfant').textContent = `${Math.round(ticketPrices.enfant).toLocaleString()} FCFA`;
@@ -371,6 +367,7 @@ function rateMovie(rating) {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadFilmDetails();
+    loadFilmPrices();
 
     // Initialize theme from app.js
     const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -380,3 +377,19 @@ document.addEventListener('DOMContentLoaded', () => {
         icon.textContent = savedTheme === 'light' ? '🌙' : '☀️';
     }
 });
+
+async function loadFilmPrices() {
+    try {
+        const response = await fetch(`${API_URL}/settings/prices`);
+        if (response.ok) {
+            const prices = await response.json();
+            ticketPrices = {
+                adulte: prices.adulte || 3000,
+                enfant: prices.enfant || 2000,
+                popcorn: prices.popcorn || 4000
+            };
+        }
+    } catch (e) {
+        // garde les valeurs par défaut déjà dans ticketPrices
+    }
+}

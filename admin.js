@@ -173,6 +173,35 @@ function previewPosterUrl(url) {
     preview.innerHTML = `<img src="${url}" alt="Aperçu" style="max-width:150px; max-height:220px; object-fit:cover; border:1px solid #333; border-radius:6px;" onerror="this.parentElement.innerHTML='<p style=color:#e55>URL invalide ou image inaccessible</p>'">`;
 }
 
+
+function previewTrailerUrl(url) {
+    const preview = document.getElementById('trailerPreview');
+    if (!preview) return;
+    if (!url || url.trim() === '') {
+        preview.innerHTML = '';
+        return;
+    }
+
+    let videoId = null;
+    if (url.includes('youtube.com/watch?v=')) {
+        videoId = url.split('v=')[1].split('&')[0];
+    } else if (url.includes('youtu.be/')) {
+        videoId = url.split('youtu.be/')[1].split('?')[0];
+    }
+
+    if (videoId) {
+        preview.innerHTML = `
+            <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px;border:1px solid #333;">
+                <iframe src="https://www.youtube.com/embed/${videoId}"
+                    style="position:absolute;top:0;left:0;width:100%;height:100%;"
+                    frameborder="0" allowfullscreen></iframe>
+            </div>
+            <p style="font-size:0.75rem;color:#4caf50;margin-top:6px;">✅ Bande-annonce YouTube détectée</p>`;
+    } else {
+        preview.innerHTML = `<p style="font-size:0.75rem;color:#888;margin-top:6px;">🔗 URL enregistrée (aperçu non disponible)</p>`;
+    }
+}
+
 async function loadMovies() {
     try {
         const response = await fetch(`${API_URL}/movies`);
@@ -227,6 +256,8 @@ function openAddMovieModal() {
     document.getElementById('movieDuration').value = '';
     document.getElementById('moviePoster').value = '';
     document.getElementById('posterPreview').innerHTML = '';
+    document.getElementById('movieTrailer').value = '';
+    document.getElementById('trailerPreview').innerHTML = '';
     document.getElementById('movieReleaseDate').value = '';
     document.getElementById('movieEndDate').value = '';
     document.getElementById('movieDescription').value = '';
@@ -245,6 +276,8 @@ function editMovie(movieId) {
 
     // Show existing poster
     previewPosterUrl(movie.poster_url || '');
+    document.getElementById('movieTrailer').value = movie.trailer_url || '';
+    previewTrailerUrl(movie.trailer_url || '');
 
     document.getElementById('movieReleaseDate').value = movie.release_date || '';
     document.getElementById('movieEndDate').value = movie.end_date || '';
@@ -262,6 +295,7 @@ async function saveMovie(event) {
         genre: document.getElementById('movieGenre').value,
         duration: parseInt(document.getElementById('movieDuration').value),
         poster_url: document.getElementById('moviePoster').value,
+        trailer_url: document.getElementById('movieTrailer').value,
         release_date: document.getElementById('movieReleaseDate').value,
         end_date: document.getElementById('movieEndDate').value,
         description: document.getElementById('movieDescription').value,
