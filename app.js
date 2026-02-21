@@ -155,6 +155,8 @@ function updateNavigation() {
 
         if (registerBtn) registerBtn.style.display = 'none';
         if (mobileRegisterBtn) mobileRegisterBtn.style.display = 'none';
+        const heroRegisterBtn = document.getElementById('heroRegisterBtn');
+        if (heroRegisterBtn) heroRegisterBtn.style.display = 'none';
 
         // Bouton déconnexion
         if (!document.getElementById('logoutBtn')) {
@@ -173,6 +175,8 @@ function updateNavigation() {
 
         if (registerBtn) registerBtn.style.display = '';
         if (mobileRegisterBtn) mobileRegisterBtn.style.display = '';
+        const heroRegisterBtn = document.getElementById('heroRegisterBtn');
+        if (heroRegisterBtn) heroRegisterBtn.style.display = '';
 
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) logoutBtn.remove();
