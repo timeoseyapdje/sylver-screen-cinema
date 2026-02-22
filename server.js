@@ -104,6 +104,15 @@ async function initDatabase() {
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )`);
 
+        await pool.query(`CREATE TABLE IF NOT EXISTS password_resets (
+            id SERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            token TEXT UNIQUE NOT NULL,
+            expires_at TIMESTAMP NOT NULL,
+            used BOOLEAN DEFAULT false,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`);
+
         await pool.query(`CREATE TABLE IF NOT EXISTS newsletter (
             id SERIAL PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
@@ -836,6 +845,101 @@ app.put('/api/admin/prices', authenticateToken, isAdmin, async (req, res) => {
     } catch (error) {
         console.error('Price update error:', error);
         res.status(500).json({ error: 'Failed to update prices' });
+    }
+});
+
+// ========== PASSWORD RESET ==========
+
+// POST /api/auth/forgot-password
+app.post('/api/auth/forgot-password', async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email requis' });
+
+    try {
+        const result = await pool.query('SELECT id, name FROM users WHERE email = $1', [email]);
+        // Toujours répondre OK pour ne pas divulguer si l'email existe
+        if (result.rows.length === 0) {
+            return res.json({ success: true, message: 'Si cet email existe, un lien vous a été envoyé.' });
+        }
+
+        const user = result.rows[0];
+        const token = require('crypto').randomBytes(32).toString('hex');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 heure
+
+        // Invalider les anciens tokens
+        await pool.query('UPDATE password_resets SET used = true WHERE email = $1', [email]);
+        await pool.query(
+            'INSERT INTO password_resets (email, token, expires_at) VALUES ($1, $2, $3)',
+            [email, token, expiresAt]
+        );
+
+        const siteUrl = process.env.SITE_URL || `http://localhost:${PORT}`;
+        const resetLink = `${siteUrl}/reset-password.html?token=${token}`;
+
+        const html = `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0a0a0a;color:#fff;padding:40px;border-radius:12px;">
+                <h1 style="font-size:1.8rem;margin-bottom:8px;">SYLVER SCREEN CINEMA</h1>
+                <hr style="border-color:#333;margin-bottom:32px;">
+                <h2 style="font-weight:400;margin-bottom:16px;">Réinitialisation de mot de passe</h2>
+                <p style="color:#aaa;line-height:1.6;">Bonjour ${user.name},</p>
+                <p style="color:#aaa;line-height:1.6;">Vous avez demandé à réinitialiser votre mot de passe. Cliquez sur le bouton ci-dessous. Ce lien expire dans <strong style="color:#fff;">1 heure</strong>.</p>
+                <div style="text-align:center;margin:32px 0;">
+                    <a href="${resetLink}" style="background:#fff;color:#000;padding:14px 32px;text-decoration:none;font-weight:600;border-radius:6px;display:inline-block;font-size:1rem;">
+                        Réinitialiser mon mot de passe
+                    </a>
+                </div>
+                <p style="color:#666;font-size:0.85rem;">Si vous n'avez pas fait cette demande, ignorez cet email. Votre mot de passe ne changera pas.</p>
+                <p style="color:#555;font-size:0.8rem;margin-top:32px;">© 2026 Sylver Screen Cinema, Douala Grand Mall</p>
+            </div>
+        `;
+
+        await sendEmail(email, '🔑 Réinitialisation de mot de passe — Sylver Screen', html);
+        res.json({ success: true, message: 'Si cet email existe, un lien vous a été envoyé.' });
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
+    }
+});
+
+// GET /api/auth/verify-reset-token
+app.get('/api/auth/verify-reset-token', async (req, res) => {
+    const { token } = req.query;
+    if (!token) return res.status(400).json({ valid: false });
+
+    try {
+        const result = await pool.query(
+            'SELECT email FROM password_resets WHERE token = $1 AND used = false AND expires_at > NOW()',
+            [token]
+        );
+        if (result.rows.length === 0) return res.json({ valid: false });
+        res.json({ valid: true, email: result.rows[0].email });
+    } catch (error) {
+        res.status(500).json({ valid: false });
+    }
+});
+
+// POST /api/auth/reset-password
+app.post('/api/auth/reset-password', async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) return res.status(400).json({ error: 'Token et mot de passe requis' });
+    if (password.length < 6) return res.status(400).json({ error: 'Mot de passe trop court (6 caractères minimum)' });
+
+    try {
+        const result = await pool.query(
+            'SELECT email FROM password_resets WHERE token = $1 AND used = false AND expires_at > NOW()',
+            [token]
+        );
+        if (result.rows.length === 0) return res.status(400).json({ error: 'Lien invalide ou expiré' });
+
+        const { email } = result.rows[0];
+        const hashed = await bcrypt.hash(password, 10);
+        await pool.query('UPDATE users SET password = $1 WHERE email = $2', [hashed, email]);
+        await pool.query('UPDATE password_resets SET used = true WHERE token = $1', [token]);
+
+        res.json({ success: true, message: 'Mot de passe mis à jour avec succès' });
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({ error: 'Erreur serveur' });
     }
 });
 

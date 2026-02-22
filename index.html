@@ -126,7 +126,7 @@
             </div>
             <div class="experience-item">
                 <div class="experience-icon">🍿</div>
-                <h3 class="experience-title">Snacks</h3>
+                <h3 class="experience-title">Snack Bar</h3>
                 <p class="experience-description">Pop-corn frais, boissons et snacks de qualité.</p>
             </div>
         </div>
@@ -162,8 +162,9 @@
             <div class="footer-section">
                 <h3>Sylver Screen Cinema</h3>
                 <p>Douala Grand Mall<br>Route de l'Aéroport<br>Douala, Cameroun</p>
-                <p style="margin-top:1rem">Tél: +237 699 267 044<br>Email: <a href="mailto:contact@sylver-screen.com"
-                        class="__cf_email__">contact@sylver-screen.com</a></p>
+                <p style="margin-top:1rem">Tél: +237 XXX XXX XXX<br>Email: <a href="/cdn-cgi/l/email-protection"
+                        class="__cf_email__"
+                        data-cfemail="03606c6d7762607743707a6f75667170607166666d2d606e">[email&#160;protected]</a></p>
             </div>
             <div class="footer-section">
                 <h3>Navigation</h3>
@@ -175,8 +176,9 @@
             <div class="footer-section">
                 <h3>Suivez-nous</h3>
                 <div class="social-links">
-                    <a href="https://www.facebook.com/p/Sylver-Screen-Cin%C3%A9ma-61578307271836/">Facebook</a>
-                    <a href="https://www.instagram.com/sylverscreencinema/?hl=en">Instagram</a>
+                    <a href="#">Facebook</a>
+                    <a href="#">Instagram</a>
+                    <a href="#">Twitter</a>
                 </div>
             </div>
         </div>
@@ -214,12 +216,60 @@
                     <button type="submit" class="btn-white" style="width:100%; padding:1rem;">
                         Se connecter
                     </button>
-                    <p style="text-align:center; margin-top:1.5rem; color:var(--text-secondary); font-size:0.88rem;">
+                    <p style="text-align:center; margin-top:1rem;">
+                        <a href="#" onclick="event.preventDefault(); closeModal('loginModal'); openForgotModal();"
+                            style="color:var(--text-tertiary); font-size:0.82rem; text-decoration:underline;">
+                            Mot de passe oublié ?
+                        </a>
+                    </p>
+                    <p style="text-align:center; margin-top:1rem; color:var(--text-secondary); font-size:0.88rem;">
                         Pas encore de compte ? <a href="#"
                             onclick="event.preventDefault(); closeModal('loginModal'); openRegisterModal();"
                             style="color:var(--accent-primary);">S'inscrire</a>
                     </p>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal" id="forgotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">MOT DE PASSE OUBLIÉ</h2>
+                <button class="close-modal" onclick="closeModal('forgotModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="forgotForm">
+                    <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:24px; line-height:1.6;">
+                        Entrez votre adresse email. Vous recevrez un lien pour réinitialiser votre mot de passe.
+                    </p>
+                    <form onsubmit="sendForgotPassword(event)">
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" id="forgotEmail" placeholder="votre@email.com" required>
+                        </div>
+                        <button type="submit" class="btn-white" style="width:100%; padding:1rem;" id="forgotBtn">
+                            Envoyer le lien
+                        </button>
+                        <p style="text-align:center; margin-top:1rem;">
+                            <a href="#" onclick="event.preventDefault(); closeModal('forgotModal'); openLoginModal();"
+                                style="color:var(--text-tertiary); font-size:0.85rem;">
+                                ← Retour à la connexion
+                            </a>
+                        </p>
+                    </form>
+                </div>
+                <div id="forgotSuccess" style="display:none; text-align:center; padding:20px 0;">
+                    <div style="font-size:3rem; margin-bottom:16px;">📧</div>
+                    <h3 style="margin-bottom:12px;">Email envoyé !</h3>
+                    <p style="color:var(--text-secondary); line-height:1.6; font-size:0.9rem;">
+                        Si votre adresse email est enregistrée, vous recevrez un lien de réinitialisation dans quelques
+                        minutes.
+                    </p>
+                    <button class="btn-white" style="margin-top:24px; padding:12px 32px;"
+                        onclick="closeModal('forgotModal')">Fermer</button>
+                </div>
             </div>
         </div>
     </div>

@@ -906,6 +906,41 @@ function closeAllModals() {
 
 function openLoginModal() { closeAllModals(); openModal('loginModal'); }
 function openRegisterModal() { closeAllModals(); openModal('registerModal'); }
+function openForgotModal() {
+    closeAllModals();
+    // Reset form state
+    const form = document.getElementById('forgotForm');
+    const success = document.getElementById('forgotSuccess');
+    const emailInput = document.getElementById('forgotEmail');
+    if (form) form.style.display = 'block';
+    if (success) success.style.display = 'none';
+    if (emailInput) emailInput.value = '';
+    openModal('forgotModal');
+}
+
+async function sendForgotPassword(event) {
+    event.preventDefault();
+    const email = document.getElementById('forgotEmail').value;
+    const btn = document.getElementById('forgotBtn');
+    btn.textContent = 'Envoi...';
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(`${API_URL}/auth/forgot-password`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+
+        // Toujours afficher le succès (même si email inconnu, pour sécurité)
+        document.getElementById('forgotForm').style.display = 'none';
+        document.getElementById('forgotSuccess').style.display = 'block';
+    } catch (e) {
+        showToast('Erreur de connexion. Réessayez.', 'error');
+        btn.textContent = 'Envoyer le lien';
+        btn.disabled = false;
+    }
+}
 
 document.querySelectorAll('.modal').forEach(modal => {
     modal.addEventListener('click', e => {
