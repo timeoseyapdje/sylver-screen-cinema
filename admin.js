@@ -162,6 +162,35 @@ function toggleArchive(archiveId) {
     }
 }
 
+
+// ========== STAR RATING ==========
+
+let adminRatingValue = 0;
+
+function setAdminRating(value) {
+    adminRatingValue = value;
+    document.getElementById('movieRating').value = value;
+    updateAdminStars(value);
+    const label = document.getElementById('ratingLabel');
+    if (label) label.textContent = value > 0 ? `Note : ${value}/5 ★` : 'Aucune note — les utilisateurs pourront voter';
+}
+
+function updateAdminStars(value) {
+    const stars = document.querySelectorAll('.admin-star');
+    stars.forEach(star => {
+        const v = parseInt(star.dataset.value);
+        star.classList.toggle('active', v <= value);
+    });
+}
+
+function resetAdminRating() {
+    adminRatingValue = 0;
+    document.getElementById('movieRating').value = 0;
+    updateAdminStars(0);
+    const label = document.getElementById('ratingLabel');
+    if (label) label.textContent = 'Aucune note — les utilisateurs pourront voter';
+}
+
 // ========== MOVIES ==========
 
 function previewPosterUrl(url) {
@@ -256,6 +285,7 @@ function openAddMovieModal() {
     document.getElementById('movieDuration').value = '';
     document.getElementById('moviePoster').value = '';
     document.getElementById('posterPreview').innerHTML = '';
+    resetAdminRating();
     document.getElementById('movieTrailer').value = '';
     document.getElementById('trailerPreview').innerHTML = '';
     document.getElementById('movieReleaseDate').value = '';
@@ -276,6 +306,8 @@ function editMovie(movieId) {
 
     // Show existing poster
     previewPosterUrl(movie.poster_url || '');
+    const existingRating = Math.round(movie.rating || 0);
+    setAdminRating(existingRating);
     document.getElementById('movieTrailer').value = movie.trailer_url || '';
     previewTrailerUrl(movie.trailer_url || '');
 
@@ -296,6 +328,7 @@ async function saveMovie(event) {
         duration: parseInt(document.getElementById('movieDuration').value),
         poster_url: document.getElementById('moviePoster').value,
         trailer_url: document.getElementById('movieTrailer').value,
+        rating: parseFloat(document.getElementById('movieRating').value) || 0,
         release_date: document.getElementById('movieReleaseDate').value,
         end_date: document.getElementById('movieEndDate').value,
         description: document.getElementById('movieDescription').value,

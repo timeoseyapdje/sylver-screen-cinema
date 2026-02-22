@@ -328,11 +328,11 @@ app.get('/api/movies/:id', async (req, res) => {
 });
 
 app.post('/api/movies', authenticateToken, isAdmin, async (req, res) => {
-    const { title, genre, duration, description, poster_url, trailer_url, release_date, end_date } = req.body;
+    const { title, genre, duration, description, poster_url, trailer_url, release_date, end_date, rating } = req.body;
     try {
         const result = await pool.query(
-            'INSERT INTO movies (title, genre, duration, description, poster_url, trailer_url, release_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id',
-            [title, genre, duration, description, poster_url, trailer_url, release_date, end_date]
+            'INSERT INTO movies (title, genre, duration, description, poster_url, trailer_url, rating, release_date, end_date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id',
+            [title, genre, duration, description, poster_url, trailer_url, rating || 0, release_date, end_date]
         );
         res.json({ id: result.rows[0].id, message: 'Movie created successfully' });
     } catch (error) {
@@ -341,11 +341,11 @@ app.post('/api/movies', authenticateToken, isAdmin, async (req, res) => {
 });
 
 app.put('/api/movies/:id', authenticateToken, isAdmin, async (req, res) => {
-    const { title, genre, duration, description, poster_url, trailer_url, release_date, end_date, is_active } = req.body;
+    const { title, genre, duration, description, poster_url, trailer_url, rating, release_date, end_date, is_active } = req.body;
     try {
         await pool.query(
-            'UPDATE movies SET title=$1, genre=$2, duration=$3, description=$4, poster_url=$5, trailer_url=$6, release_date=$7, end_date=$8, is_active=$9 WHERE id=$10',
-            [title, genre, duration, description, poster_url, trailer_url, release_date, end_date, is_active, req.params.id]
+            'UPDATE movies SET title=$1, genre=$2, duration=$3, description=$4, poster_url=$5, trailer_url=$6, rating=$7, release_date=$8, end_date=$9, is_active=$10 WHERE id=$11',
+            [title, genre, duration, description, poster_url, trailer_url, rating || 0, release_date, end_date, is_active, req.params.id]
         );
         res.json({ message: 'Movie updated successfully' });
     } catch (error) {
