@@ -539,7 +539,7 @@ function displayMovies(moviesData) {
                 <div class="movie-genre">${movie.genre}</div>
                 <div class="movie-rating">
                     <span>${'★'.repeat(Math.floor(movie.rating || 0))}${'☆'.repeat(5 - Math.floor(movie.rating || 0))}</span>
-                    <span class="rating-text">${(movie.rating || 0).toFixed(1)} (${movie.votes_count || 0})</span>
+                    <span class="rating-text">${parseFloat(movie.rating || 0).toFixed(1)} (${movie.votes_count || 0})</span>
                 </div>
                 <div class="movie-actions">
                     <button class="btn-book" onclick="event.stopPropagation(); quickBook(${movie.id})">Réserver</button>
@@ -561,7 +561,7 @@ async function showMovieDetails(movieId) {
         </div>
         <p style="margin-bottom:0.5rem;"><strong>Genre :</strong> ${currentMovie.genre}</p>
         <p style="margin-bottom:0.5rem;"><strong>Durée :</strong> ${currentMovie.duration} min</p>
-        <p style="margin-bottom:1.25rem;"><strong>Note :</strong> ${(currentMovie.rating || 0).toFixed(1)}/5 (${currentMovie.votes_count || 0} votes)</p>
+        <p style="margin-bottom:1.25rem;"><strong>Note :</strong> ${parseFloat(currentMovie.rating || 0).toFixed(1)} ★ (${currentMovie.votes_count || 0} votes)</p>
         <p style="color:var(--text-gray); line-height:1.7; font-size:0.9rem;">${currentMovie.description || ''}</p>
     `;
 
@@ -1030,7 +1030,7 @@ async function loadFilmsCarousel() {
                     <div class="film-card-meta">
                         <span>${film.genre || 'Genre'}</span>
                         <span>${film.duration ? film.duration + ' min' : 'N/A'}</span>
-                        ${film.rating ? `<span>★ ${film.rating}/5</span>` : ''}
+                        ${film.rating ? `<span>★ ${parseFloat(film.rating).toFixed(1)}</span>` : ''}
                     </div>
                     <p class="film-card-description">${film.description || 'Description non disponible.'}</p>
                     <div class="film-card-cta">

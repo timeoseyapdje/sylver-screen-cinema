@@ -163,32 +163,19 @@ function toggleArchive(archiveId) {
 }
 
 
-// ========== STAR RATING ==========
+// ========== RATING ==========
 
-let adminRatingValue = 0;
-
-function setAdminRating(value) {
-    adminRatingValue = value;
-    document.getElementById('movieRating').value = value;
-    updateAdminStars(value);
-    const label = document.getElementById('ratingLabel');
-    if (label) label.textContent = value > 0 ? `Note : ${value}/5 ★` : 'Aucune note — les utilisateurs pourront voter';
-}
-
-function updateAdminStars(value) {
-    const stars = document.querySelectorAll('.admin-star');
-    stars.forEach(star => {
-        const v = parseInt(star.dataset.value);
-        star.classList.toggle('active', v <= value);
-    });
+function clampRating(input) {
+    let v = parseFloat(input.value);
+    if (isNaN(v)) v = 0;
+    if (v < 0) v = 0;
+    if (v > 5) v = 5;
+    input.value = v;
 }
 
 function resetAdminRating() {
-    adminRatingValue = 0;
-    document.getElementById('movieRating').value = 0;
-    updateAdminStars(0);
-    const label = document.getElementById('ratingLabel');
-    if (label) label.textContent = 'Aucune note — les utilisateurs pourront voter';
+    const input = document.getElementById('movieRating');
+    if (input) input.value = '0.0';
 }
 
 // ========== MOVIES ==========
@@ -306,8 +293,8 @@ function editMovie(movieId) {
 
     // Show existing poster
     previewPosterUrl(movie.poster_url || '');
-    const existingRating = Math.round(movie.rating || 0);
-    setAdminRating(existingRating);
+    const ratingInput = document.getElementById('movieRating');
+    if (ratingInput) ratingInput.value = parseFloat(movie.rating || 0).toFixed(1);
     document.getElementById('movieTrailer').value = movie.trailer_url || '';
     previewTrailerUrl(movie.trailer_url || '');
 

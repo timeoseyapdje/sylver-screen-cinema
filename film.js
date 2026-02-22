@@ -37,7 +37,7 @@ async function loadFilmDetails() {
         document.getElementById('filmTitle').textContent = film.title;
         document.getElementById('filmGenre').textContent = film.genre;
         document.getElementById('filmDuration').textContent = film.duration ? `${film.duration} min` : 'N/A';
-        document.getElementById('filmRatingBadge').textContent = film.rating ? `★ ${film.rating}/5` : '★ N/A';
+        document.getElementById('filmRatingBadge').textContent = film.rating ? `★ ${parseFloat(film.rating).toFixed(1)}` : '★ N/A';
         document.getElementById('filmSynopsis').textContent = film.description || 'Description non disponible.';
 
         // Set hero background + poster image
@@ -361,7 +361,7 @@ function rateMovie(rating) {
     });
 
     // Save rating (could be sent to API)
-    showToast(`Vous avez noté ce film ${rating}/5`, 'success');
+    showToast(`Vous avez noté ce film ${rating} ★`, 'success');
 }
 
 // Initialize
