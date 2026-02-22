@@ -311,8 +311,8 @@ function editMovie(movieId) {
     document.getElementById('movieTrailer').value = movie.trailer_url || '';
     previewTrailerUrl(movie.trailer_url || '');
 
-    document.getElementById('movieReleaseDate').value = movie.release_date || '';
-    document.getElementById('movieEndDate').value = movie.end_date || '';
+    document.getElementById('movieReleaseDate').value = movie.release_date ? movie.release_date.substring(0, 10) : '';
+    document.getElementById('movieEndDate').value = movie.end_date ? movie.end_date.substring(0, 10) : '';
     document.getElementById('movieDescription').value = movie.description || '';
     document.getElementById('movieActive').checked = movie.is_active;
     openModal('movieFormModal');
