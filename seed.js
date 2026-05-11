@@ -1,11 +1,15 @@
 // seed.js
 require('dotenv').config();
+const dns = require('dns');
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    lookup: (hostname, options, callback) => {
+        dns.lookup(hostname, { family: 4 }, callback);
+    }
 });
 
 async function initDatabase() {
