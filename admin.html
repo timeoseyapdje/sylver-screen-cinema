@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Sylver Screen Cinema</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Montserrat:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <header>
+        <nav>
+            <div class="logo-container">
+                <div class="logo-text">SYLVER SCREEN</div>
+            </div>
+            <div class="nav-links">
+                <a href="index.html">Site Public</a>
+                <button class="btn-white" onclick="logout()">Déconnexion</button>
+            </div>
+        </nav>
+    </header>
+
+    <div class="admin-panel">
+        <div class="admin-header">
+            <h1>PANNEAU ADMIN</h1>
+            <button class="btn-black" onclick="logout()" style="display:none;" id="mobileLogout">Déconnexion</button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="statUsers">0</div>
+                <div class="stat-label">Utilisateurs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statBookings">0</div>
+                <div class="stat-label">Réservations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statRevenue">0</div>
+                <div class="stat-label">Revenus (FCFA)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="statMovies">0</div>
+                <div class="stat-label">Films actifs</div>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('movies')">Films</button>
+            <button class="tab" onclick="switchTab('showtimes')">Séances</button>
+            <button class="tab" onclick="switchTab('bookings')">Réservations</button>
+            <button class="tab" onclick="switchTab('users')">Utilisateurs</button>
+            <button class="tab" onclick="switchTab('newsletter')">Newsletter</button>
+        </div>
+
+        <!-- Movies Tab -->
+        <div id="moviesTab" class="tab-content active">
+            <div class="admin-section">
+                <h2>GESTION DES FILMS</h2>
+                <div class="section-actions">
+                    <button class="btn-white" onclick="openAddMovieModal()">+ Ajouter un film</button>
+                </div>
+                <table id="moviesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Poster</th>
+                            <th>Titre</th>
+                            <th>Genre</th>
+                            <th>Durée</th>
+                            <th>Note</th>
+                            <th>Date sortie</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Showtimes Tab -->
+        <div id="showtimesTab" class="tab-content">
+            <div class="admin-section">
+                <h2>GESTION DES SÉANCES</h2>
+                <div class="section-actions">
+                    <button class="btn-white" onclick="openAddShowtimeModal()">+ Ajouter une séance</button>
+                </div>
+
+                <h3 style="margin-bottom:1rem;">📅 Séances à venir</h3>
+                <table id="showtimesTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Film</th>
+                            <th>Date</th>
+                            <th>Heure</th>
+                            <th>Salle</th>
+                            <th>Prix</th>
+                            <th>Places dispo</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <!-- Archives séances passées -->
+                <div style="margin-top:2rem; border-top:1px solid var(--border-gray); padding-top:1rem;">
+                    <button onclick="toggleArchive('pastShowtimes')"
+                        style="background:transparent; border:1px solid #444; color:#999; padding:0.75rem 1.5rem; cursor:pointer; width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; font-family:Montserrat,sans-serif;">
+                        <span>📁 Séances passées (<span id="pastShowtimesCount">0</span>) · Revenus : <span
+                                id="pastShowtimesRevenue">0</span> FCFA</span>
+                        <span id="pastShowtimesIcon">▼</span>
+                    </button>
+                    <div id="pastShowtimesArchive" style="display:none; margin-top:1rem;">
+                        <table id="pastShowtimesTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Film</th>
+                                    <th>Date</th>
+                                    <th>Heure</th>
+                                    <th>Salle</th>
+                                    <th>Places vendues</th>
+                                    <th>Revenus</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookings Tab -->
+        <div id="bookingsTab" class="tab-content">
+            <div class="admin-section">
+                <h2>RÉSERVATIONS</h2>
+
+                <h3 style="margin-bottom:1rem;">🎟️ Réservations actives</h3>
+                <table id="bookingsTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Utilisateur</th>
+                            <th>Film</th>
+                            <th>Date/Heure</th>
+                            <th>Places</th>
+                            <th>Total</th>
+                            <th>Statut</th>
+                            <th>Date réservation</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+
+                <!-- Archives réservations passées/annulées -->
+                <div style="margin-top:2rem; border-top:1px solid var(--border-gray); padding-top:1rem;">
+                    <button onclick="toggleArchive('pastBookings')"
+                        style="background:transparent; border:1px solid #444; color:#999; padding:0.75rem 1.5rem; cursor:pointer; width:100%; text-align:left; display:flex; justify-content:space-between; align-items:center; font-family:Montserrat,sans-serif;">
+                        <span>📁 Historique (passées + annulées) (<span id="pastBookingsCount">0</span>) · Revenus :
+                            <span id="pastBookingsRevenue">0</span> FCFA</span>
+                        <span id="pastBookingsIcon">▼</span>
+                    </button>
+                    <div id="pastBookingsArchive" style="display:none; margin-top:1rem;">
+                        <table id="pastBookingsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Utilisateur</th>
+                                    <th>Film</th>
+                                    <th>Date/Heure</th>
+                                    <th>Places</th>
+                                    <th>Total</th>
+                                    <th>Statut</th>
+                                    <th>Date réservation</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Tab -->
+        <div id="usersTab" class="tab-content">
+            <div class="admin-section">
+                <h2>UTILISATEURS</h2>
+                <!-- TARIFS -->
+                <div class="admin-section">
+                    <h2>💰 TARIFS DES BILLETS</h2>
+                    <p style="color:#999; margin-bottom:1.5rem; font-size:0.9rem;">Modifiez les prix ici. Les
+                        changements
+                        s'appliquent immédiatement sur le site.</p>
+                    <div
+                        style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:1.5rem; margin-bottom:1.5rem;">
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:0.5rem; font-size:0.8rem; letter-spacing:1px; text-transform:uppercase;">🧑
+                                Billet Adulte (FCFA)</label>
+                            <input type="number" id="priceAdulte"
+                                style="width:100%; padding:0.9rem; background:#000; border:1px solid #333; color:#fff; font-family:Montserrat,sans-serif; font-size:1rem;"
+                                min="500" step="100">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:0.5rem; font-size:0.8rem; letter-spacing:1px; text-transform:uppercase;">👶
+                                Billet Enfant (FCFA)</label>
+                            <input type="number" id="priceEnfant"
+                                style="width:100%; padding:0.9rem; background:#000; border:1px solid #333; color:#fff; font-family:Montserrat,sans-serif; font-size:1rem;"
+                                min="500" step="100">
+                        </div>
+                        <div>
+                            <label
+                                style="display:block; margin-bottom:0.5rem; font-size:0.8rem; letter-spacing:1px; text-transform:uppercase;">🍿
+                                Adulte + Popcorn (FCFA)</label>
+                            <input type="number" id="pricePopcorn"
+                                style="width:100%; padding:0.9rem; background:#000; border:1px solid #333; color:#fff; font-family:Montserrat,sans-serif; font-size:1rem;"
+                                min="500" step="100">
+                        </div>
+                    </div>
+                    <button class="btn-white" onclick="savePrices()" style="padding:0.9rem 2.5rem;">Enregistrer les
+                        tarifs</button>
+                </div>
+                <table id="usersTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nom</th>
+                            <th>Email</th>
+                            <th>Téléphone</th>
+                            <th>Admin</th>
+                            <th>Notifications</th>
+                            <th>Vérifié</th>
+                            <th>Inscription</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+
+        <!-- Newsletter Tab -->
+        <div id="newsletterTab" class="tab-content">
+            <div class="admin-section">
+                <h2>📧 NEWSLETTER</h2>
+                <p style="color:#999; margin-bottom:1.5rem; font-size:0.9rem;"><span id="newsletterCount">0</span>
+                    abonné(s) à la newsletter</p>
+                <table id="newsletterTable">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Email</th>
+                            <th>Date d'inscription</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Movie Modal -->
+    <div class="modal" id="movieFormModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="movieFormTitle">AJOUTER UN FILM</h2>
+                <button class="close-modal" onclick="closeModal('movieFormModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveMovie(event)">
+                    <input type="hidden" id="movieId">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Titre</label>
+                            <input type="text" id="movieTitle" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Genre</label>
+                            <input type="text" id="movieGenre" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Durée (minutes)</label>
+                            <input type="number" id="movieDuration" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Affiche du film (URL)</label>
+                            <input type="text" id="moviePoster" placeholder="https://image.tmdb.org/t/p/w500/..."
+                                oninput="previewPosterUrl(this.value)">
+                            <p style="font-size:0.75rem; color:#888; margin-top:4px;">💡 Utilisez une URL d'image (TMDB,
+                                Unsplash, etc.). <a href="https://www.themoviedb.org" target="_blank"
+                                    style="color:var(--accent-primary)">Trouver sur TMDB →</a></p>
+                            <div id="posterPreview" style="margin-top:1rem; text-align:center;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Bande-annonce (URL YouTube ou autre)</label>
+                            <input type="text" id="movieTrailer" placeholder="https://www.youtube.com/watch?v=..."
+                                oninput="previewTrailerUrl(this.value)">
+                            <p style="font-size:0.75rem; color:#888; margin-top:4px;">💡 Collez l'URL YouTube, Vimeo ou
+                                tout autre lien vidéo. <a href="https://www.youtube.com" target="_blank"
+                                    style="color:var(--accent-primary)">Chercher sur YouTube →</a></p>
+                            <div id="trailerPreview" style="margin-top:1rem;"></div>
+                        </div>
+                        <div class="form-group">
+                            <label>Date de sortie</label>
+                            <input type="date" id="movieReleaseDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Date de fin</label>
+                            <input type="date" id="movieEndDate">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="movieDescription" rows="4"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Note initiale (0.0 → 5.0)</label>
+                        <input type="number" id="movieRating" value="0.0" min="0" max="5" step="0.1"
+                            style="width:120px;" oninput="clampRating(this)">
+                        <p style="font-size:0.75rem; color:#888; margin-top:6px;">Les utilisateurs peuvent aussi voter —
+                            la note sera recalculée en moyenne.</p>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="movieActive" checked>
+                            Film actif
+                        </label>
+                    </div>
+                    <button type="submit" class="btn-white" style="width: 100%;">Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Showtime Modal -->
+    <div class="modal" id="showtimeFormModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="showtimeFormTitle">AJOUTER UNE SÉANCE</h2>
+                <button class="close-modal" onclick="closeModal('showtimeFormModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form onsubmit="saveShowtime(event)">
+                    <input type="hidden" id="showtimeId">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Film</label>
+                            <select id="showtimeMovie" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Date</label>
+                            <input type="date" id="showtimeDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Heure</label>
+                            <input type="time" id="showtimeTime" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Salle</label>
+                            <select id="showtimeRoom" required>
+                                <option value="Salle 1">Salle 1</option>
+                                <option value="Salle 2">Salle 2</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Prix (FCFA)</label>
+                            <input type="number" id="showtimePrice" value="3000" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Places totales</label>
+                            <input type="number" id="showtimeSeats" value="150" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-white" style="width: 100%;">Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="admin.js"></script>
+</body>
+
+</html>
